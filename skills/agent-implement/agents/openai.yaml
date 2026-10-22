@@ -1,0 +1,4 @@
+interface:
+  display_name: "Triển khai với agent"
+  short_description: "Triển khai đúng phạm vi và kiểm chứng kết quả"
+  default_prompt: "Dùng $agent-implement để thực hiện yêu cầu sau."

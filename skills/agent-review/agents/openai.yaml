@@ -1,0 +1,4 @@
+interface:
+  display_name: "Review cùng agent"
+  short_description: "Review thay đổi và báo lỗi có bằng chứng cụ thể"
+  default_prompt: "Dùng $agent-review để review các thay đổi sau."
