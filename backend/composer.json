@@ -1,10 +1,11 @@
 {
   "name": "techzone/backend",
-  "description": "Computer Store PHP MVC backend scaffold",
+  "description": "Computer Store PHP MVC application",
   "type": "project",
   "require": {
-    "php": "^8.3",
+    "php": "~8.3.0",
     "ext-fileinfo": "*",
+    "ext-mbstring": "*",
     "ext-pdo": "*",
     "ext-pdo_mysql": "*"
   },
@@ -12,5 +13,9 @@
     "psr-4": {
       "App\\": "app/"
     }
+  },
+  "scripts": {
+    "test": "@php tests/run.php",
+    "test:database": "@php tests/database.php"
   }
 }

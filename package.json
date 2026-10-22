@@ -5,12 +5,24 @@
   "type": "module",
   "workspaces": ["frontend"],
   "scripts": {
-    "dev": "npm run dev --workspace frontend --",
+    "dev": "node scripts/dev.mjs",
     "build": "npm run build --workspace frontend --",
     "preview": "npm run preview --workspace frontend --",
     "typecheck": "npm run typecheck --workspace frontend",
     "test": "npm run test --workspace frontend",
-    "format": "npm run format --workspace frontend --"
+    "format": "npm run format --workspace frontend --",
+    "backend:setup": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-backend.ps1 -SkipMySql",
+    "backend:init": "node scripts/backend.mjs init",
+    "backend:connection": "node scripts/backend.mjs connection",
+    "backend:start-db": "node scripts/backend.mjs start-db",
+    "backend:stop-db": "node scripts/backend.mjs stop-db",
+    "backend:doctor": "node scripts/backend.mjs doctor",
+    "backend:migrate": "node scripts/backend.mjs migrate",
+    "backend:seed": "node scripts/backend.mjs seed",
+    "backend:test": "node scripts/backend.mjs test",
+    "backend:test-db": "node scripts/backend.mjs test-db",
+    "backend:lint": "node scripts/backend.mjs lint",
+    "dev:backend": "node scripts/backend.mjs serve"
   },
   "figma": {
     "kitAttachments": {

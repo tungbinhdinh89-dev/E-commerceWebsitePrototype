@@ -321,7 +321,7 @@ Laptop; PC lắp ráp; CPU; Mainboard; RAM; GPU; SSD/HDD; PSU; Case; màn hình;
 
 ### 8.2. Skeleton dự án
 
-Theo cách tổ chức repo, phần trình bày nằm trong `frontend/`, xử lý PHP/MySQL trong `backend/`, tài liệu và cấu hình AI/skills ở root. UI React hiện tại là prototype để xem thử; bản runtime hoàn chỉnh vẫn là PHP MVC server-rendered theo mục 8.1. Các thư mục PHP đang là khung chuẩn bị triển khai.
+Theo cách tổ chức repo, phần trình bày nằm trong `frontend/`, xử lý PHP/MySQL trong `backend/`, tài liệu và cấu hình AI/skills ở root. UI React hiện tại là prototype để xem thử; bản runtime hoàn chỉnh vẫn là PHP MVC server-rendered theo mục 8.1. Baseline DB-01 đã có entities, migrations và catalog PHP đầu tiên; các flow còn lại cần triển khai/kiểm thử theo tài liệu backend.
 
 ```text
 computer-store/
@@ -424,6 +424,10 @@ Các thao tác sửa/xóa sử dụng phương thức POST có CSRF token hoặc
 **Ràng buộc DB:** `users.email`, `products.sku`, `products.slug`, `articles.slug` là duy nhất; dùng foreign key, index và `DECIMAL(15,2)` cho tiền; lưu đường dẫn ảnh thay vì blob; chuẩn hóa dữ liệu để hạn chế trùng lặp. `order_items.product_id` cần chính sách khóa ngoại phù hợp để không xóa lịch sử đơn khi sản phẩm ẩn/ngừng bán.
 
 > Đây là **logical schema**, chưa phải SQL DDL cuối cùng. Khi sang giai đoạn thiết kế database phải bổ sung đầy đủ kiểu dữ liệu, NULL/NOT NULL, default, unique, foreign keys, index và quy tắc ON DELETE.
+
+**Baseline triển khai DB-01:** SQL DDL ban đầu tại `backend/database/migrations/` (001–006); [schema vật lý và ERD](backend/database/README.md) ghi chi tiết entity, trạng thái, constraint, FK và invariant cần service/transaction. Danh mục PHP đầu tiên phục vụ FR-PRO-01/02/03. Các phần còn lại vẫn cần triển khai; DB-01 chưa đồng nghĩa toàn bộ flow PHP/MySQL đã được nghiệm thu.
+
+**DB-02 — kết nối NAS (22/10/2026):** theo yêu cầu người dùng, triển khai database phát triển `computer_store` và DB kiểm thử riêng `computer_store_test` trên container `mysql_nas`, host `192.168.1.200`, mapped port `32771`. Server hiện tại là MySQL 26.7.0; cho phép 26.7.x cho hạ tầng này, ngoài baseline 8.x, không thay đổi MySQL thành hệ quản trị khác. Mã nguồn không chứa credentials thật; PHP kết nối qua PDO, chỉ migration/test trong hai database của dự án.
 
 ---
 

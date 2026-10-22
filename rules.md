@@ -67,6 +67,8 @@ Nếu tài liệu không thống nhất, **dừng thực hiện phần xung đ�
 
 **Không dùng** Node.js/Express/NestJS, ASP.NET, Django, Spring Boot cho nghiệp vụ server; Node có thể xuất hiện **chỉ như công cụ build asset frontend nếu cần**, không phục vụ request backend ở runtime.
 
+**DB-02 — hạ tầng NAS được người dùng chỉ định (22/10/2026):** môi trường phát triển dùng container `mysql_nas` tại `192.168.1.200:32771`, đã xác nhận phiên bản **MySQL 26.7.0**. Cho phép MySQL 26.7.x cho môi trường này, bên cạnh baseline MySQL 8.x; giữ InnoDB/utf8mb4/PDO và SQL DDL theo chuẩn baseline. Không tự nâng/hạ phiên bản container. Mật khẩu chỉ lưu local trong `.env` được Git ignore. [MySQL 26.7 release notes](https://dev.mysql.com/doc/relnotes/mysql/26.7/en/).
+
 ---
 
 ## 3. Phạm vi hệ thống và giới hạn nghiệp vụ
@@ -188,7 +190,7 @@ Do #1 và #2 cùng làm trong `Site` / `Contact` / `Faq`, **phân quyền sở h
 
 ## 6. Source skeleton và convention
 
-Repo chia theo phạm vi: UI, asset và PHP Views nằm trong `frontend/`; mã xử lý PHP/MySQL nằm trong `backend/`; tài liệu, rules, skills và cấu hình AI giữ tại root. `frontend/src/` là prototype React hiện có để xem thử UI bằng `npm run dev`, không phải kiến trúc runtime của bản PHP hoàn chỉnh. Các thư mục PHP đang được dành chỗ; front controller, route, migration và Views sẽ được triển khai ở giai đoạn backend.
+Repo chia theo phạm vi: UI, asset và PHP Views nằm trong `frontend/`; mã xử lý PHP/MySQL nằm trong `backend/`; tài liệu, rules, skills và cấu hình AI giữ tại root. `frontend/src/` là prototype React hiện có để xem thử UI bằng `npm run dev`, không phải kiến trúc runtime của bản PHP hoàn chỉnh. Baseline DB-01 đã có entities, migration, front controller và catalog PHP Views; xem `backend/README.md` và `backend/database/README.md` cho trạng thái, cấu hình và phần chưa triển khai.
 
 ```text
 computer-store/

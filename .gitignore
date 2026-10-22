@@ -13,6 +13,10 @@ build/
 .env*
 !.env.example
 vendor/
+.tools/
+backend/public/assets/
+backend/public/uploads/*/*
+!backend/public/uploads/*/.gitkeep
 .vite/
 vite.config.*.timestamp-*
 *.tsbuildinfo

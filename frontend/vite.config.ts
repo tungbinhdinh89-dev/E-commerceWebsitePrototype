@@ -2,9 +2,14 @@ import { defineConfig, type HtmlTagDescriptor, type Plugin } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 import path from 'node:path'
+import { existsSync, readFileSync } from 'node:fs'
+import { createHash } from 'node:crypto'
 
-import siteConfiguration from '../.figma/make/site.json'
-
+// Figma metadata is local/ignored and is absent in a fresh checkout.
+const siteConfigPath = path.resolve(__dirname, '../.figma/make/site.json')
+const siteConfiguration: FigmaSiteConfiguration = existsSync(siteConfigPath)
+  ? JSON.parse(readFileSync(siteConfigPath, 'utf8'))
+  : { title: 'TechZone', language: 'vi' }
 
 // Vite config — https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
@@ -19,7 +24,18 @@ export default defineConfig(({ mode }) => {
       minify: !emitSourcemaps,
     },
     plugins: [
-react(),
+      react(),
+      {
+        name: 'techzone-dev-identity',
+        apply: 'serve',
+        configureServer(server) {
+          server.middlewares.use('/__techzone_dev', (_request, response) => {
+            response.setHeader('Content-Type', 'application/json')
+            response.setHeader('Cache-Control', 'no-store')
+            response.end(JSON.stringify({ project: createHash('sha256').update(path.resolve(__dirname, '..')).digest('hex') }))
+          })
+        },
+      },
       tailwindcss(),
       figmaSiteConfiguration(siteConfiguration),
       figmaErrorOverlayReplay(),
@@ -35,10 +51,16 @@ react(),
       host: process.env.FIGMA_DEV_SERVER_HOST || '0.0.0.0',
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
+      proxy: Object.fromEntries(
+        ['/api', '/products', '/assets'].map((prefix) => [prefix, {
+          target: process.env.BACKEND_URL || 'http://127.0.0.1:8000',
+          changeOrigin: true,
+        }]),
+      ),
       watch: {
         ignored: [
           '**/.figma/**',
-],
+        ],
       },
     },
     preview: {

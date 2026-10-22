@@ -1,0 +1,36 @@
+:root { font-family: system-ui, sans-serif; color: #15213b; background: #f5f7fb; line-height: 1.6; }
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #2459df; text-decoration: none; }
+a:hover { text-decoration: underline; }
+a:focus-visible, input:focus-visible, button:focus-visible { outline: 3px solid #5687ff; outline-offset: 4px; }
+.container { width: min(1180px, calc(100% - 40px)); margin-inline: auto; }
+.header { background: white; border-bottom: 1px solid #e0e6ef; }
+.header-inner { display: flex; justify-content: space-between; align-items: center; min-height: 80px; }
+.brand { color: #15213b; font-size: 28px; font-weight: 800; letter-spacing: -1px; }
+.brand span { color: #2459df; }
+.intro { padding: 50px 0 20px; }
+h1 { font-size: clamp(28px, 4vw, 42px); line-height: 1.2; margin: 12px 0; }
+h2 { font-size: 19px; line-height: 1.4; }
+.eyebrow { font-size: 12px; font-weight: 700; letter-spacing: 2px; color: #2459df; }
+.search { max-width: 650px; }
+.search label { display: block; margin-bottom: 8px; font-weight: 600; }
+.search-row { display: flex; gap: 10px; }
+input, button { font: inherit; border-radius: 8px; padding: 12px 16px; }
+input { flex: 1; width: 100%; min-width: 0; border: 1px solid #b5c2d6; }
+button { border: 0; background: #2459df; color: white; cursor: pointer; }
+.product-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 22px; }
+.product-card { background: white; border: 1px solid #e0e6ef; border-radius: 12px; padding: 22px; }
+.product-card a { color: inherit; }
+.product-card img { width: 100%; height: 220px; object-fit: contain; }
+.category { color: #58667d; font-size: 13px; }
+.price { font-size: 23px; font-weight: 750; color: #2459df; }
+.pagination { display: flex; flex-wrap: wrap; justify-content: center; gap: 24px; margin: 32px 0; }
+.product-detail { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; margin-block: 32px; }
+.product-detail img { width: 100%; height: auto; object-fit: contain; background: white; border-radius: 12px; }
+.breadcrumb { margin-top: 30px; }
+footer { padding-block: 36px; border-top: 1px solid #e0e6ef; margin-top: 40px; color: #58667d; }
+.skip-link { position: absolute; top: -100px; background: white; padding: 12px; }
+.skip-link:focus { top: 0; }
+@media (max-width: 850px) { .product-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .product-detail { grid-template-columns: 1fr; } }
+@media (max-width: 520px) { .product-grid { grid-template-columns: 1fr; } .search-row { flex-direction: column; } .intro { padding-top: 30px; } }

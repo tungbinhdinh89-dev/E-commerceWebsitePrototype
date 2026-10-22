@@ -1,6 +1,6 @@
 # figma-make-app
 
-Computer Store / TechZone repository: a React + Vite + Tailwind CSS frontend prototype and a PHP/MySQL backend scaffold. Read `rules.md` and `spec.md` for the target PHP MVC architecture. The existing React app is a UI prototype; the PHP backend has not been implemented yet.
+Computer Store / TechZone repository: a React + Vite + Tailwind CSS frontend prototype and an initial PHP/MySQL application. Read `rules.md` and `spec.md` for the target PHP MVC architecture. The React app remains a UI prototype; the PHP backend has entities, SQL migrations and a read-only server-rendered catalog. See `backend/README.md` for setup and remaining features.
 
 ## Development Server
 
@@ -32,7 +32,7 @@ This is the canonical project structure. Start with task-relevant files below. O
 
 ## Verification
 
-Run from the repository root: `npm run build`, `npm run typecheck`, and `npm test`. `npm run dev` must serve the frontend UI at `http://localhost:8443` unless `$PORT` or `--port` overrides it. Production frontend output is `frontend/dist/`; Figma deploy scripts use that directory. The backend scaffold is not an operational PHP application yet.
+Run from the repository root: `npm run build`, `npm run typecheck`, and `npm test`. `npm run dev` must serve the frontend UI at `http://localhost:8443` unless `$PORT` or `--port` overrides it; it reuses an existing server from this project. Production frontend output is `frontend/dist/`; Figma deploy scripts use that directory. PHP changes use `npm run backend:lint`, `npm run backend:test` and `npm run backend:test-db`. The configured NAS MySQL server is `192.168.1.200:32771` (26.7.x permitted by DB-02); credentials belong only in ignored `backend/.env`. See `backend/README.md` for PHP 8.3 setup and catalog URLs.
 
 ## Dependencies
 

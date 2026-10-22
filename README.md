@@ -40,7 +40,7 @@ E-commerceWebsitePrototype/
 └── .mise.toml
 ```
 
-UI hiện tại là **frontend prototype React 19, TypeScript, Vite 8, Tailwind v4 và Astra UI**, chạy bằng dữ liệu trong trình duyệt. `backend/` mới là khung thư mục, chưa có ứng dụng PHP/MySQL hoạt động. Các PHP Views cũng mới được dành chỗ trong `frontend/resources/views/`.
+UI hiện tại là **frontend prototype React 19, TypeScript, Vite 8, Tailwind v4 và Astra UI**, chạy bằng dữ liệu trong trình duyệt. Backend đã có 15 entities, sáu migration MySQL và danh mục PHP server-rendered tại `frontend/resources/views/`; xem [hướng dẫn backend](backend/README.md) và [schema/ERD](backend/database/README.md). Các flow nghiệp vụ còn lại chưa triển khai.
 
 ## Chạy UI frontend
 
@@ -53,7 +53,7 @@ npm run dev
 
 Sau khi dependencies đã cài, lệnh `npm run dev` không cần gọi pnpm. Nếu dùng npm để cài dependencies, `npm install` từ root cũng nhận workspace `frontend`.
 
-Truy cập **http://localhost:8443**. Lệnh root tự chạy Vite trong `frontend/`; có thể dùng `npm run dev -- --port 8444` để đổi cổng hoặc đặt biến môi trường `PORT`. Dừng server bằng `Ctrl+C` trong terminal chạy lệnh. Trong Figma Make, dùng preview panel nếu môi trường đã có server.
+Truy cập **http://localhost:8443**. Lệnh root chạy Vite trong `frontend/` và dùng lại server cùng dự án nếu đã mở trên cổng đó; có thể dùng `npm run dev -- --port 8444` để đổi cổng hoặc đặt biến môi trường `PORT`. Cổng thuộc ứng dụng khác sẽ được báo rõ, không tự dừng ứng dụng đó. Dừng server bằng `Ctrl+C` trong terminal chạy lệnh. Trong Figma Make, dùng preview panel nếu môi trường đã có server.
 
 ```sh
 npm run build       # Xuất frontend/dist/
@@ -74,7 +74,9 @@ npm run preview    # Xem bản đã build
 
 Xem [backend/README.md](backend/README.md) cho sơ đồ module và ranh giới MVC. Khi triển khai backend, môi trường cần PHP 8.3 với `fileinfo`, `pdo`, `pdo_mysql`, Composer, MySQL 8 và Apache/mod_rewrite. `backend/composer.json` khai báo môi trường và PSR-4 autoload; `backend/.env.example` là mẫu cấu hình.
 
-Webroot PHP sẽ là **`backend/public/`**; PHP Views đặt trong **`frontend/resources/views/`**. Migration/seed thuộc `backend/database/`; ảnh upload thuộc `backend/public/uploads/`. Khung hiện tại chưa có front controller, router, migration hoặc kết nối MySQL, nên chưa chạy được flow PHP. Bản React dùng để xem thử UI và cần được chuyển thành PHP Views khi triển khai kiến trúc trong spec.
+Webroot PHP là **`backend/public/`**; PHP Views đặt trong **`frontend/resources/views/`**. Migration/seed thuộc `backend/database/`; ảnh upload thuộc `backend/public/uploads/`. Danh mục đầu tiên đi qua Controller → Service → Repository → PDO, có search/pagination và Fetch enhancement. Bản React tiếp tục dùng để xem thử UI; không phải runtime chính của bản PHP.
+
+Trên Windows: `npm run backend:setup`, cấu hình `backend/.env`, rồi `npm run backend:connection`, `npm run backend:init`, `npm run backend:migrate`, `npm run backend:seed`, `npm run dev:backend`. PHP/Composer cài riêng trong `.tools/`; MySQL dùng container NAS tại **192.168.1.200:32771**, phiên bản thực **26.7.0** được bổ sung theo DB-02 trong rules/spec. Credentials chỉ nằm trong .env được ignore. Mở **http://localhost:8000/products** hoặc **http://localhost:8443/products** qua Vite proxy. Xem backend README cho cấu hình, test và phần chưa triển khai.
 
 ## TailAdmin
 
@@ -126,6 +128,9 @@ npm run build
 npm run typecheck
 npm test
 npm run format -- src
+npm run backend:lint       # Cần PHP 8.3
+npm run backend:test
+npm run backend:test-db    # Cần MySQL 8, DB riêng có đuôi _test
 ```
 
 Formatting uses the repository's `oxfmt` script. Multi-property TypeScript object types are deliberately multiline to avoid an issue in the installed formatter with inline semicolons.
