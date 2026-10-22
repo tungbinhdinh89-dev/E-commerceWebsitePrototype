@@ -1,4 +1,0 @@
-interface:
-  display_name: "Lập kế hoạch với agent"
-  short_description: "Làm rõ yêu cầu và tiêu chí hoàn thành"
-  default_prompt: "Dùng $agent-plan để lập kế hoạch cho nhiệm vụ sau."

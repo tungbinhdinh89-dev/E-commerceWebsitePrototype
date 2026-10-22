@@ -1,4 +1,0 @@
-interface:
-  display_name: "Sửa lỗi với agent"
-  short_description: "Tái hiện lỗi, tìm nguyên nhân và kiểm tra bản sửa"
-  default_prompt: "Dùng $agent-debug để điều tra và sửa lỗi sau."
