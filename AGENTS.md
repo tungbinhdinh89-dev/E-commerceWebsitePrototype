@@ -1,10 +1,10 @@
 # figma-make-app
 
-React + Vite + Tailwind CSS project running inside Figma Make.
+Computer Store / TechZone repository: a React + Vite + Tailwind CSS frontend prototype and a PHP/MySQL backend scaffold. Read `rules.md` and `spec.md` for the target PHP MVC architecture. The existing React app is a UI prototype; the PHP backend has not been implemented yet.
 
 ## Development Server
 
-A Vite development server is **already running** on `$PORT` (default 8443). You don't need to start it manually.
+A Figma Make environment may already run Vite on `$PORT` (default 8443). Check before starting another server. For local development, run `npm run dev` from the repository root; it delegates to the `frontend` workspace.
 
 - Preview URL: The user can access the running app through the preview panel
 - Hot reload: Changes to source files are reflected immediately
@@ -13,13 +13,26 @@ A Vite development server is **already running** on `$PORT` (default 8443). You 
 
 This is the canonical project structure. Start with task-relevant files below. Only follow imports or inspect other files when required, when a documented path is missing, or when the repository contradicts this guide.
 
-- `src/main.tsx` - React entrypoint; imports `src/index.css` and mounts `src/App.tsx` into the `#root` element
-- `src/App.tsx` - Primary application component and the usual starting point for UI work
-- `src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
-- `index.html` - Vite HTML shell containing the `#root` element and loading `src/main.tsx`
-- `package.json` - Project dependencies and the Vite build, development, preview, and formatting scripts
-- `vite.config.ts` - Vite configuration with React, Tailwind CSS v4, and Figma Make plugins plus the `@` alias for `src`
+- `frontend/src/main.tsx` - React entrypoint; imports `frontend/src/index.css` and mounts `frontend/src/App.tsx`
+- `frontend/src/App.tsx` - Primary application component and starting point for prototype UI work
+- `frontend/src/index.css` - Global CSS entrypoint and Tailwind CSS v4 import
+- `frontend/public/` - Frontend static assets and product images
+- `frontend/index.html` - Vite HTML shell loading `/src/main.tsx` relative to the frontend Vite root
+- `frontend/package.json` - Frontend dependencies and Vite, TypeScript, test, and formatting scripts
+- `frontend/vite.config.ts` - React, Tailwind and Figma plugins; `@` aliases `frontend/src`
+- `frontend/tsconfig.json` and `frontend/tests/` - Frontend type checking and regression tests
+- `frontend/resources/views/` - Reserved PHP presentation templates for the target application
+- `backend/` - PHP MVC scaffold: `app/`, `config/`, `database/`, `routes/`, `public/`, `tests/`; see `backend/README.md`
+- `package.json`, `pnpm-workspace.yaml`, `pnpm-lock.yaml` - Root workspace coordination and shared dependency lockfile
 - `.mise.toml` - Toolchain versions for Node.js and pnpm
+- `skills/`, `guidelines/`, `plans/`, `.session-plans/`, `.cursor/`, `.claude-plugin/`, `AGENTS.md`, `CLAUDE.md`, `CURSOR.md` - AI instructions and tools; keep these at the repository root
+- `.figma/` and `.figaro/` - Root Figma environment metadata; frontend Vite reads `../.figma/make/site.json`
+
+`frontend/src/service.ts` and `frontend/src/data.ts` simulate data in the browser. Keep them with the prototype. Backend business logic belongs in PHP modules under `backend/app/Modules/` and must follow the boundaries in `rules.md`.
+
+## Verification
+
+Run from the repository root: `npm run build`, `npm run typecheck`, and `npm test`. `npm run dev` must serve the frontend UI at `http://localhost:8443` unless `$PORT` or `--port` overrides it. Production frontend output is `frontend/dist/`; Figma deploy scripts use that directory. The backend scaffold is not an operational PHP application yet.
 
 ## Dependencies
 
@@ -30,9 +43,9 @@ This is the canonical project structure. Start with task-relevant files below. O
 
 ## Styling
 
-This project uses **Tailwind CSS v4** through the `@tailwindcss/vite` plugin configured in `vite.config.ts`. `src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in `src/index.css`. This scaffold does not need a Tailwind config file or PostCSS config.
+The prototype uses **Tailwind CSS v4** through `@tailwindcss/vite` in `frontend/vite.config.ts`. `frontend/src/index.css` imports Tailwind with `@import 'tailwindcss';`. Use Tailwind utility classes directly in JSX and put global CSS or Tailwind v4 theme customization in that file. This scaffold does not need a Tailwind config file or PostCSS config.
 
-`src/main.tsx` imports `src/index.css`, so global font wiring belongs in `src/index.css`. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults there.
+`frontend/src/main.tsx` imports `frontend/src/index.css`, so global font wiring belongs there. Keep CSS `@import` statements first, then add any `@font-face` rules and font-family defaults.
 
 ## Code quality
 

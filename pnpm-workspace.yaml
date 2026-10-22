@@ -1,0 +1,7 @@
+packages:
+  - frontend
+
+# Astra's declarations import React types from the shared dependency store.
+publicHoistPattern:
+  - '@types/react'
+  - '@types/react-dom'

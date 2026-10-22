@@ -1,10 +1,88 @@
-# TechZone
+# TechZone / Computer Store
 
-Vietnamese computer hardware e-commerce **frontend prototype**, built with React 19, TypeScript, Vite 8, Tailwind v4 and Astra UI.
+Website bán máy tính và linh kiện theo `rules.md` và `spec.md`.
+
+## Cấu trúc thư mục
+
+```text
+E-commerceWebsitePrototype/
+├── frontend/
+│   ├── src/                  # UI React và dữ liệu mô phỏng localStorage
+│   ├── public/               # Ảnh, favicon và static assets của UI
+│   ├── resources/views/      # Dành cho PHP Views khi tích hợp bản hoàn chỉnh
+│   ├── tests/                # Test service mô phỏng và React context
+│   ├── index.html
+│   ├── vite.config.ts
+│   ├── tsconfig.json
+│   └── package.json          # Dependencies và scripts frontend
+├── backend/                  # Khung PHP MVC theo rules/spec
+│   ├── app/{Core,Middleware,Modules,Support}/
+│   ├── config/
+│   ├── database/{migrations,seeders}/
+│   ├── public/uploads/
+│   ├── routes/
+│   ├── tests/
+│   ├── composer.json
+│   └── .env.example
+├── skills/                   # Skills của agent
+├── guidelines/               # Hướng dẫn AI/design system
+├── plans/                    # Kế hoạch và tài liệu agent
+├── .session-plans/
+├── .cursor/
+├── .claude-plugin/
+├── .figma/                   # Cấu hình môi trường Figma Make
+├── .figaro/
+├── AGENTS.md, CLAUDE.md, CURSOR.md
+├── rules.md, spec.md
+├── package.json              # Điều phối lệnh từ root qua npm workspace
+├── pnpm-workspace.yaml
+├── pnpm-lock.yaml
+└── .mise.toml
+```
+
+UI hiện tại là **frontend prototype React 19, TypeScript, Vite 8, Tailwind v4 và Astra UI**, chạy bằng dữ liệu trong trình duyệt. `backend/` mới là khung thư mục, chưa có ứng dụng PHP/MySQL hoạt động. Các PHP Views cũng mới được dành chỗ trong `frontend/resources/views/`.
+
+## Chạy UI frontend
+
+Mở terminal tại **root dự án**. Dùng Node.js 22.12 trở lên trong dòng Node 22 và pnpm 10.34.3 theo `.mise.toml`.
+
+```sh
+pnpm install --frozen-lockfile
+npm run dev
+```
+
+Sau khi dependencies đã cài, lệnh `npm run dev` không cần gọi pnpm. Nếu dùng npm để cài dependencies, `npm install` từ root cũng nhận workspace `frontend`.
+
+Truy cập **http://localhost:8443**. Lệnh root tự chạy Vite trong `frontend/`; có thể dùng `npm run dev -- --port 8444` để đổi cổng hoặc đặt biến môi trường `PORT`. Dừng server bằng `Ctrl+C` trong terminal chạy lệnh. Trong Figma Make, dùng preview panel nếu môi trường đã có server.
+
+```sh
+npm run build       # Xuất frontend/dist/
+npm run typecheck   # Kiểm tra TypeScript của frontend
+npm test            # Chạy cả hai file test frontend
+npm run preview    # Xem bản đã build
+```
+
+## Stack bản hoàn chỉnh theo rules/spec
+
+- PHP 8.3 thuần/OOP, MVC tự triển khai, server-rendered views.
+- MySQL 8.x, InnoDB, `utf8mb4`, PDO prepared statements.
+- Bootstrap 5 cho public UI.
+- TailAdmin Free cho admin UI (tích hợp PHP Views; tài nguyên template phải được nhóm kiểm tra license trước khi đưa vào).
+- Composer chỉ dùng PSR-4 autoload và thư viện độc lập; không dùng PHP framework/CMS.
+
+### Backend và tích hợp PHP
+
+Xem [backend/README.md](backend/README.md) cho sơ đồ module và ranh giới MVC. Khi triển khai backend, môi trường cần PHP 8.3 với `fileinfo`, `pdo`, `pdo_mysql`, Composer, MySQL 8 và Apache/mod_rewrite. `backend/composer.json` khai báo môi trường và PSR-4 autoload; `backend/.env.example` là mẫu cấu hình.
+
+Webroot PHP sẽ là **`backend/public/`**; PHP Views đặt trong **`frontend/resources/views/`**. Migration/seed thuộc `backend/database/`; ảnh upload thuộc `backend/public/uploads/`. Khung hiện tại chưa có front controller, router, migration hoặc kết nối MySQL, nên chưa chạy được flow PHP. Bản React dùng để xem thử UI và cần được chuyển thành PHP Views khi triển khai kiến trúc trong spec.
+
+## TailAdmin
+
+TailAdmin Free là template được yêu cầu cho bản admin PHP. Giữ source asset trong `frontend/`, tích hợp markup vào `frontend/resources/views/layouts/admin.php` và xuất asset vào webroot PHP khi triển khai. Kiểm tra license trước khi đưa tài nguyên template vào; runtime backend dùng PHP theo rules/spec.
 
 ## Preview and demo accounts
 
-The Figma Make preview server starts automatically. Do not start a second server.
+Tài khoản demo dùng trong UI prototype:
 
 | Role | Email | Password |
 | --- | --- | --- |
@@ -30,24 +108,24 @@ This is a simulation: no real payments, deliveries, email or server-side securit
 
 ## Architecture
 
-- `src/data.ts`: types and seeded mock data.
-- `src/service.ts`: shared asynchronous service, authorization checks and atomic localStorage updates.
-- `src/context.tsx`: shared state subscriptions, notifications and authentication dialog.
-- `src/App.tsx`: storefront shell, homepage and hash navigation.
-- `src/StorePages.tsx`: shopping, checkout and account.
-- `src/ContentPages.tsx`: editorial and informational pages.
-- `src/Admin.tsx`: independent management workspace.
-- `src/index.css`: centralized TechZone tokens and responsive Astra extensions.
+- `frontend/src/data.ts`: types and seeded mock data.
+- `frontend/src/service.ts`: shared asynchronous mock service, authorization checks and atomic localStorage updates.
+- `frontend/src/context.tsx`: shared state subscriptions, notifications and authentication dialog.
+- `frontend/src/App.tsx`: storefront shell, homepage and hash navigation.
+- `frontend/src/StorePages.tsx`: shopping, checkout and account.
+- `frontend/src/ContentPages.tsx`: editorial and informational pages.
+- `frontend/src/Admin.tsx`: independent management workspace.
+- `frontend/src/index.css`: centralized TechZone tokens and responsive Astra extensions.
 
 The versioned store key is `techzone.database.v1`. Data persists only in this browser and is not shared across devices or browsers. Clear the website's browser storage to reset the demo. Client-side authorization is only a UX simulation; PHP must revalidate authentication, roles, prices, coupons and inventory in database transactions.
 
 ## Verification
 
 ```sh
-pnpm build
-pnpm exec tsc --noEmit
-node --test tests/service.test.mjs
-pnpm format src
+npm run build
+npm run typecheck
+npm test
+npm run format -- src
 ```
 
 Formatting uses the repository's `oxfmt` script. Multi-property TypeScript object types are deliberately multiline to avoid an issue in the installed formatter with inline semicolons.
