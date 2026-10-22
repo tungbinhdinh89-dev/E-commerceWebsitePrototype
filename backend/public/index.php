@@ -14,6 +14,9 @@ try {
     }
     $router = require dirname(__DIR__) . '/routes/web.php';
     $response = $router->dispatch($_SERVER['REQUEST_METHOD'], $path);
+} catch (\App\Core\ApiException $error) {
+    Response::json(null, $error->status, $error->getMessage(), $error->errors)->send();
+    return;
 } catch (Throwable $error) {
     // Log only the exception type: PDO messages can contain database credentials/SQL.
     error_log('Request failed: ' . get_class($error));

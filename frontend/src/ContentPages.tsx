@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { useRemoteList, useRemoteItem } from "./useRemoteData"
+import RemotePager from "./RemotePager"
 import { Button, Badge } from "@figma/astraui"
 import { InputField, TextareaField } from "./fields"
 import {
@@ -48,12 +50,25 @@ function News({ id }: { id?: string }) {
   const [filter, setFilter] = useState("Tất cả")
   const [query, setQuery] = useState("")
   const [comment, setComment] = useState("")
-  const articles = db.content.articles.filter((a) => a.status === "published")
-  const article = articles.find((a) => a.id === id)
+  const [page, setPage] = useState(1)
+  const [commentPage, setCommentPage] = useState(1)
+  const remote = useRemoteList<Content>(
+    "articles",
+    { page, q: query, section: filter === "Tất cả" ? "" : filter },
+    !id,
+  )
+  const articles = remote.items
+  const detail = useRemoteItem<Content>("articles", id)
+  const article = detail.item
+  const comments = useRemoteList<Content>(
+    "comments",
+    { articleId: id, page: commentPage },
+    Boolean(id),
+  )
   if (id && !article)
     return (
       <Empty
-        title="Không tìm thấy bài viết"
+        title={detail.error || "Đang tải bài viết…"}
         body="Bài viết chưa được xuất bản hoặc đã bị gỡ."
         action={<NavLink to="/news">Quay lại tin công nghệ</NavLink>}
       />
@@ -69,8 +84,9 @@ function News({ id }: { id?: string }) {
           </div>
           <p className="muted">
             TechZone Editorial ·{" "}
-            {new Date(article.createdAt).toLocaleDateString("vi-VN")} · 5 phút
-            đọc
+            {new Date(article.createdAt).toLocaleDateString("vi-VN")} ·{" "}
+            {Math.max(1, Math.ceil(article.body.split(/\s+/).length / 200))}{" "}
+            phút đọc
           </p>
           {article.image && (
             <img
@@ -91,26 +107,26 @@ function News({ id }: { id?: string }) {
           </div>
           <section className="comments-section">
             <Title>Bình luận & trao đổi</Title>
-            {db.content.comments
-              .filter(
-                (c) =>
-                  c.extra === id &&
-                  (c.status === "published" || c.userId === user?.id),
-              )
-              .map((c) => (
-                <div className="comment" key={c.id}>
-                  <div>
-                    <strong>{c.title}</strong>
-                    <span className="muted">
-                      {new Date(c.createdAt).toLocaleDateString("vi-VN")}
-                    </span>
-                    {c.status === "pending" && (
-                      <Badge label="Chờ kiểm duyệt" variant="warning" />
-                    )}
-                  </div>
-                  <p>{c.body}</p>
+            {comments.items.map((c) => (
+              <div className="comment" key={c.id}>
+                <div>
+                  <strong>{c.title}</strong>
+                  <span className="muted">
+                    {new Date(c.createdAt).toLocaleDateString("vi-VN")}
+                  </span>
+                  {c.status === "pending" && (
+                    <Badge label="Chờ kiểm duyệt" variant="warning" />
+                  )}
                 </div>
-              ))}
+                <p>{c.body}</p>
+              </div>
+            ))}
+            <RemotePager
+              pagination={comments.pagination}
+              onPage={setCommentPage}
+              loading={comments.loading}
+              error={comments.error}
+            />
             {user ? (
               <form
                 className="form-stack"
@@ -152,11 +168,7 @@ function News({ id }: { id?: string }) {
         </article>
       </>
     )
-  const shown = articles.filter(
-    (a) =>
-      (filter === "Tất cả" || a.extra === filter) &&
-      a.title.toLowerCase().includes(query.toLowerCase()),
-  )
+  const shown = articles
   return (
     <>
       <Breadcrumb name="Tin công nghệ" />
@@ -167,15 +179,15 @@ function News({ id }: { id?: string }) {
       />
       <div className="news-toolbar">
         <div className="tab-bar">
-          {[
-            "Tất cả",
-            ...new Set(articles.map((a) => a.extra).filter(Boolean)),
-          ].map((f) => (
+          {["Tất cả", ...db.articleSections].map((f) => (
             <Button
               variant="subtle"
               key={f}
               className={f === filter ? "selected" : ""}
-              onClick={() => setFilter(f)}
+              onClick={() => {
+                setFilter(f)
+                setPage(1)
+              }}
             >
               {f}
             </Button>
@@ -184,7 +196,10 @@ function News({ id }: { id?: string }) {
         <InputField
           aria-label="Tìm bài viết"
           value={query}
-          onChange={setQuery}
+          onChange={(value) => {
+            setQuery(value)
+            setPage(1)
+          }}
           prefix={<Search size={16} />}
           placeholder="Tìm bài viết..."
         />
@@ -217,6 +232,12 @@ function News({ id }: { id?: string }) {
           </article>
         ))}
       </div>
+      <RemotePager
+        pagination={remote.pagination}
+        onPage={setPage}
+        loading={remote.loading}
+        error={remote.error}
+      />
       {!shown.length && (
         <Empty
           title="Chưa có bài viết phù hợp"
@@ -387,14 +408,11 @@ function Services({ pricing = false }: { pricing?: boolean }) {
   )
 }
 function FAQ() {
-  const { db } = useShop()
   const [open, setOpen] = useState<string | null>(null)
   const [query, setQuery] = useState("")
-  const faqs = db.content.faqs.filter(
-    (f) =>
-      f.status === "published" &&
-      `${f.title} ${f.body}`.toLowerCase().includes(query.toLowerCase()),
-  )
+  const [page, setPage] = useState(1)
+  const remote = useRemoteList<Content>("faqs", { q: query, page })
+  const faqs = remote.items
   return (
     <>
       <Breadcrumb name="Câu hỏi thường gặp" />
@@ -407,7 +425,10 @@ function FAQ() {
         <InputField
           aria-label="Tìm câu hỏi"
           value={query}
-          onChange={setQuery}
+          onChange={(value) => {
+            setQuery(value)
+            setPage(1)
+          }}
           prefix={<Search size={17} />}
           placeholder="Tìm câu trả lời của bạn..."
         />
@@ -427,6 +448,12 @@ function FAQ() {
             {open === f.id && <p>{f.body}</p>}
           </section>
         ))}
+        <RemotePager
+          pagination={remote.pagination}
+          onPage={setPage}
+          loading={remote.loading}
+          error={remote.error}
+        />
         {!faqs.length && (
           <Empty
             title="Chưa tìm thấy câu trả lời"
@@ -471,22 +498,22 @@ function Contact() {
               title: "Ghé thăm cửa hàng",
               text:
                 db.content.company.find((c) => c.status === "published")
-                  ?.extra || "TP. Hồ Chí Minh",
+                  ?.extra || "Địa chỉ đang được cập nhật",
             },
             {
               icon: Phone,
               title: "Gọi cho chúng tôi",
-              text: setting("setting-phone", "1800 6868"),
+              text: setting("setting-phone", "Chưa cập nhật"),
             },
             {
               icon: Mail,
               title: "Email hỗ trợ",
-              text: setting("setting-email", "hello@techzone.vn"),
+              text: setting("setting-email", "Chưa cập nhật"),
             },
             {
               icon: Clock,
               title: "Thời gian làm việc",
-              text: setting("setting-hours", "08:30 – 21:00, Thứ 2 – Chủ nhật"),
+              text: setting("setting-hours", "Chưa cập nhật"),
             },
           ].map(({ icon: Icon, title, text }) => (
             <div className="contact-info-item" key={title}>
@@ -502,7 +529,7 @@ function Contact() {
           <div className="contact-note">
             <ShieldCheck size={22} />
             <p>
-              Thông tin chỉ được lưu trong trình duyệt để mô phỏng xử lý yêu
+              Thông tin được gửi tới cửa hàng và lưu trên máy chủ để xử lý yêu
               cầu. Không có email thực tế được gửi.
             </p>
           </div>
@@ -612,20 +639,17 @@ function Policies() {
           Hủy đơn hàng
         </div>
         <p>
-          Thành viên được hủy đơn khi đang chờ xác nhận. Quản trị viên có thể
-          hủy trước khi giao hàng. Đơn đã giao cho vận chuyển cần liên hệ hỗ
-          trợ. Hủy đơn hợp lệ hoàn lại tồn kho đúng một lần.
+          Vui lòng liên hệ cửa hàng khi cần hủy đơn. Quản trị viên xác nhận hủy
+          trước khi giao hàng. Đơn đã giao cho vận chuyển cần liên hệ hỗ trợ.
+          Hủy đơn hợp lệ hoàn lại tồn kho đúng một lần.
         </p>
         <div role="heading" aria-level={2} className="text-title">
-          Quyền riêng tư & phạm vi mô phỏng
+          Quyền riêng tư
         </div>
         <p>
-          Đây là prototype phục vụ học tập, không phải website thương mại thực
-          tế. Dữ liệu tài khoản, đơn hàng, nội dung và yêu cầu liên hệ được lưu
-          bằng localStorage trên trình duyệt này. Không nhập thông tin nhạy cảm.
-          Xóa dữ liệu website trong cài đặt trình duyệt để xóa dữ liệu demo. Khi
-          tích hợp PHP/MySQL, việc xác thực, phân quyền, giá bán và tồn kho phải
-          được kiểm tra lại trên máy chủ.
+          Thông tin tài khoản, đơn hàng và liên hệ được lưu để cung cấp dịch vụ.
+          Mật khẩu được băm; phiên đăng nhập được bảo vệ bằng cookie. Liên hệ
+          cửa hàng để được hỗ trợ về dữ liệu cá nhân.
         </p>
       </div>
     </>

@@ -1,4 +1,6 @@
 import { useState } from "react"
+import { useRemoteList, useRemoteItem } from "./useRemoteData"
+import RemotePager from "./RemotePager"
 import {
   Button,
   IconButton,
@@ -29,7 +31,6 @@ import {
 import { api } from "./service"
 import { useShop } from "./shop-context"
 import {
-  categories,
   money,
   orderLabels,
   type Order,
@@ -66,31 +67,24 @@ function Catalog({
   const [filtersOpen, setFiltersOpen] = useState(false)
   const [page, setPage] = useState(1)
   const liked = api.favorites(db)
-  const brands = [...new Set(db.products.map((p) => p.brand))].sort()
-  let products = db.products.filter(
-    (p) =>
-      (!favorites || liked.includes(p.id)) &&
-      (!category || p.category === category) &&
-      (!brand || p.brand.toLowerCase() === brand.toLowerCase()) &&
-      (!query ||
-        `${p.name} ${p.brand} ${p.specs.join(" ")}`
-          .toLowerCase()
-          .includes(query.toLowerCase())) &&
-      (!inStock || p.stock > 0) &&
-      (price === "all" ||
-        (price === "under2"
-          ? p.price < 2000000
-          : price === "2to5"
-            ? p.price >= 2000000 && p.price <= 5000000
-            : p.price > 5000000)) &&
-      (!params.has("sale") || p.oldPrice > p.price),
-  )
-  if (sort === "price-asc")
-    products = products.sort((a, b) => a.price - b.price)
-  if (sort === "price-desc")
-    products = products.sort((a, b) => b.price - a.price)
-  if (sort === "name")
-    products = products.sort((a, b) => a.name.localeCompare(b.name))
+  const categories = db.categories
+  const brands = db.brands
+  const remote = useRemoteList<Product>("products", {
+    q: query,
+    category,
+    brand,
+    page,
+    perPage: 8,
+    sort,
+    stock: inStock ? 1 : undefined,
+    sale: params.has("sale") ? 1 : undefined,
+    favorites: favorites ? 1 : undefined,
+    minPrice:
+      price === "2to5" ? 2000000 : price === "over5" ? 5000000.01 : undefined,
+    maxPrice:
+      price === "under2" ? 1999999.99 : price === "2to5" ? 5000000 : undefined,
+  })
+  const products = remote.items
   function reset() {
     setCategory("")
     setBrand("")
@@ -103,7 +97,7 @@ function Catalog({
     setter(value)
     setPage(1)
   }
-  const totalPages = Math.ceil(products.length / 8)
+  const totalPages = remote.pagination.totalPages
   return (
     <main className="container page">
       <Breadcrumb name={favorites ? "Sản phẩm yêu thích" : "Sản phẩm"} />
@@ -190,7 +184,7 @@ function Catalog({
         <section className="catalog-results">
           <div className="catalog-toolbar">
             <span>
-              <strong>{products.length}</strong> sản phẩm phù hợp
+              <strong>{remote.pagination.total}</strong> sản phẩm phù hợp
             </span>
             <Button
               variant="neutral"
@@ -246,28 +240,25 @@ function Catalog({
               )}
             </div>
           )}
+          {remote.error && <p role="alert">{remote.error}</p>}
+          {remote.loading && <p role="status">Đang tải sản phẩm…</p>}
           {products.length ? (
             <>
               <div className="product-grid catalog-grid">
-                {products
-                  .slice(
-                    (Math.min(page, totalPages) - 1) * 8,
-                    Math.min(page, totalPages) * 8,
-                  )
-                  .map((p) => (
-                    <ProductCard
-                      key={p.id}
-                      product={p}
-                      liked={liked.includes(p.id)}
-                      add={() =>
-                        void act(
-                          () => api.addToCart(p.id),
-                          "Đã thêm vào giỏ hàng.",
-                        )
-                      }
-                      favorite={() => sync(() => api.favorite(p.id))}
-                    />
-                  ))}
+                {products.map((p) => (
+                  <ProductCard
+                    key={p.id}
+                    product={p}
+                    liked={liked.includes(p.id)}
+                    add={() =>
+                      void act(
+                        () => api.addToCart(p.id),
+                        "Đã thêm vào giỏ hàng.",
+                      )
+                    }
+                    favorite={() => sync(() => api.favorite(p.id))}
+                  />
+                ))}
               </div>
               {totalPages > 1 && (
                 <div className="pagination">
@@ -303,14 +294,15 @@ function HeadsetMessage() {
 }
 function ProductDetail({ id }: { id: string }) {
   const { db, act, sync, busy } = useShop()
-  const product = db.products.find((p) => p.id === id)
+  const detail = useRemoteItem<Product>("products", id)
+  const product = detail.item
   const [quantity, setQuantity] = useState(1)
   const [tab, setTab] = useState("specs")
   if (!product)
     return (
       <main className="container page">
         <Empty
-          title="Không tìm thấy sản phẩm"
+          title={detail.error || "Đang tải sản phẩm…"}
           body="Sản phẩm có thể đã ngừng kinh doanh."
           action={<NavLink to="/products">Xem sản phẩm khác</NavLink>}
         />
@@ -365,7 +357,12 @@ function ProductDetail({ id }: { id: string }) {
             </strong>
             <p>Tư vấn tương thích miễn phí · Bảo hành chính hãng</p>
             <p>
-              Nhập <strong>TECHZONE5</strong> giảm 5%, tối đa 500.000₫
+              {db.coupons
+                .map(
+                  (entry) =>
+                    `${entry.code} · Giảm ${entry.basisPoints / 100}% · Tối đa ${money(entry.maxDiscount)}`,
+                )
+                .join(" · ")}
             </p>
           </div>
           <div className="detail-buy">
@@ -556,12 +553,19 @@ function Cart() {
               <Button
                 variant="neutral"
                 onClick={() => {
-                  if (coupon.trim().toUpperCase() !== "TECHZONE5") {
-                    notify("Mã không hợp lệ. Thử TECHZONE5 để giảm 5%.", true)
+                  if (
+                    !db.coupons.some(
+                      (entry) => entry.code === coupon.trim().toUpperCase(),
+                    )
+                  ) {
+                    notify(
+                      "Mã ưu đãi không hợp lệ hoặc đã ngừng áp dụng.",
+                      true,
+                    )
                     setApplied("")
                   } else {
-                    setApplied("TECHZONE5")
-                    notify("Đã áp dụng ưu đãi TECHZONE5.")
+                    setApplied(coupon.trim().toUpperCase())
+                    notify("Đã áp dụng ưu đãi.")
                   }
                 }}
               >
@@ -569,7 +573,12 @@ function Cart() {
               </Button>
             </div>
             <span className="fine">
-              Mã demo: TECHZONE5 · Giảm 5%, tối đa 500.000₫
+              {db.coupons
+                .map(
+                  (entry) =>
+                    `${entry.code} · Giảm ${entry.basisPoints / 100}% · Tối đa ${money(entry.maxDiscount)}`,
+                )
+                .join(" · ")}
             </span>
             <Summary quote={quote} />
             <p className="shipping-tip">
@@ -753,7 +762,8 @@ function Checkout({ route }: { route: string }) {
               </div>
             </div>
             <p className="fine">
-              Đây là bản mô phỏng. Không có giao dịch hay giao hàng thực tế.
+              Đơn hàng được lưu để cửa hàng xác nhận. Thanh toán COD khi nhận
+              hàng.
             </p>
           </section>
         </div>
@@ -792,7 +802,7 @@ function Checkout({ route }: { route: string }) {
             {busy ? "Đang đặt hàng..." : "Xác nhận đặt hàng COD"}
           </Button>
           <p className="summary-secure">
-            <ShieldCheck size={15} /> Thông tin được lưu trên trình duyệt này
+            <ShieldCheck size={15} /> Thông tin được xử lý và lưu trên máy chủ
           </p>
         </aside>
       </form>
@@ -812,16 +822,15 @@ export function OrderCard({
   const next: Partial<Record<OrderStatus, OrderStatus>> = {
     pending: "confirmed",
     confirmed: "shipping",
-    shipping: "delivered",
+    shipping: "completed",
   }
-  const canCancel = management
-    ? ["pending", "confirmed"].includes(order.status)
-    : order.status === "pending"
+  const canCancel =
+    management && ["pending", "confirmed"].includes(order.status)
   return (
     <article className="order-card">
       <div className="order-header">
         <div>
-          <strong>{order.id}</strong>
+          <strong>{order.number ?? order.id}</strong>
           <span>{new Date(order.createdAt).toLocaleString("vi-VN")}</span>
         </div>
         <Badge
@@ -829,7 +838,7 @@ export function OrderCard({
           variant={
             order.status === "cancelled"
               ? "danger"
-              : order.status === "delivered"
+              : order.status === "completed"
                 ? "success"
                 : "warning"
           }
@@ -937,6 +946,13 @@ function Account({ orderId }: { orderId?: string }) {
   const [phone, setPhone] = useState(user?.phone ?? "")
   const [address, setAddress] = useState(user?.address ?? "")
   const [status, setStatus] = useState("all")
+  const [page, setPage] = useState(1)
+  const remote = useRemoteList<Order>(
+    "orders",
+    { page, status: status === "all" ? "" : status },
+    Boolean(user),
+  )
+  const detail = useRemoteItem<Order>("orders", user ? orderId : undefined)
   if (!user)
     return (
       <main className="container page">
@@ -949,12 +965,7 @@ function Account({ orderId }: { orderId?: string }) {
         />
       </main>
     )
-  const orders = db.orders.filter(
-    (o) =>
-      o.userId === user.id &&
-      (!orderId || o.id === orderId) &&
-      (status === "all" || o.status === status),
-  )
+  const orders = orderId ? (detail.item ? [detail.item] : []) : remote.items
   return (
     <main className="container page">
       <Breadcrumb name="Tài khoản của tôi" />
@@ -1006,8 +1017,8 @@ function Account({ orderId }: { orderId?: string }) {
             variant="subtle"
             iconStart={<LogOut size={18} />}
             onClick={() =>
-              sync(() => {
-                api.logout()
+              sync(async () => {
+                await api.logout()
                 go("/")
               })
             }
@@ -1035,6 +1046,15 @@ function Account({ orderId }: { orderId?: string }) {
               >
                 Đơn hàng của tôi
               </Title>
+              {!orderId && (
+                <RemotePager
+                  pagination={remote.pagination}
+                  onPage={setPage}
+                  loading={remote.loading}
+                  error={remote.error}
+                />
+              )}
+              {orderId && detail.error && <p role="alert">{detail.error}</p>}
               {orders.length ? (
                 <div className="form-stack">
                   {orders.map((o) => (
@@ -1075,7 +1095,7 @@ function Account({ orderId }: { orderId?: string }) {
                 label="Email"
                 value={user.email}
                 disabled
-                description="Email đăng nhập không thể thay đổi trong bản demo."
+                description="Email đăng nhập không thể thay đổi tại đây."
               />
               <InputField
                 label="Số điện thoại"

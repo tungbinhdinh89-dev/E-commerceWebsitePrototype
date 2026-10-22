@@ -1,0 +1,493 @@
+{
+  "categories": [
+    {
+      "id": "cpu",
+      "name": "CPU - Bộ vi xử lý",
+      "short": "CPU",
+      "detail": "Intel, AMD"
+    },
+    {
+      "id": "mainboard",
+      "name": "Mainboard - Bo mạch chủ",
+      "short": "Mainboard",
+      "detail": "ASUS, MSI, Gigabyte"
+    },
+    {
+      "id": "gpu",
+      "name": "VGA - Card màn hình",
+      "short": "Card màn hình",
+      "detail": "NVIDIA, AMD Radeon"
+    },
+    {
+      "id": "ram",
+      "name": "RAM - Bộ nhớ trong",
+      "short": "RAM",
+      "detail": "DDR4, DDR5"
+    },
+    {
+      "id": "ssd",
+      "name": "SSD / HDD - Ổ cứng",
+      "short": "SSD / HDD",
+      "detail": "Nhanh hơn, lưu nhiều hơn"
+    },
+    {
+      "id": "psu",
+      "name": "Nguồn máy tính",
+      "short": "Nguồn / PSU",
+      "detail": "Ổn định & bền bỉ"
+    },
+    {
+      "id": "case",
+      "name": "Case - Vỏ máy tính",
+      "short": "Case PC",
+      "detail": "Dấu ấn riêng của bạn"
+    },
+    {
+      "id": "cooling",
+      "name": "Tản nhiệt máy tính",
+      "short": "Tản nhiệt",
+      "detail": "Mát mẻ, hiệu năng cao"
+    },
+    {
+      "id": "monitor",
+      "name": "Màn hình máy tính",
+      "short": "Màn hình",
+      "detail": "Mọi chi tiết đều sắc nét"
+    },
+    {
+      "id": "accessories",
+      "name": "Bàn phím, chuột & phụ kiện",
+      "short": "Phụ kiện",
+      "detail": "Hoàn thiện góc máy"
+    },
+    {
+      "id": "pc",
+      "name": "PC Gaming & Workstation",
+      "short": "PC Gaming",
+      "detail": "Sẵn sàng chiến game"
+    }
+  ],
+  "products": [
+    {
+      "id": "gpu-asus",
+      "name": "Card màn hình ASUS Dual GeForce RTX 4060 OC 8GB",
+      "brand": "ASUS",
+      "category": "gpu",
+      "price": 7490000,
+      "oldPrice": 8990000,
+      "specs": [
+        "8GB GDDR6",
+        "PCIe 4.0",
+        "Bảo hành 36 tháng"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/gpu-asus.webp"
+    },
+    {
+      "id": "cpu-intel",
+      "name": "CPU Intel Core i5-14400F (10 nhân / 16 luồng)",
+      "brand": "Intel",
+      "category": "cpu",
+      "price": 4290000,
+      "oldPrice": 4990000,
+      "specs": [
+        "Socket LGA 1700",
+        "Up to 4.7GHz",
+        "Bảo hành 36 tháng"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/cpu-intel.webp"
+    },
+    {
+      "id": "main-msi",
+      "name": "Mainboard MSI PRO B760M-A WIFI DDR4",
+      "brand": "MSI",
+      "category": "mainboard",
+      "price": 3190000,
+      "oldPrice": 3790000,
+      "specs": [
+        "Intel B760",
+        "DDR4",
+        "Wi-Fi 6E"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/main-msi.webp"
+    },
+    {
+      "id": "ram-corsair",
+      "name": "RAM Corsair Vengeance RGB 32GB DDR5 6000MHz",
+      "brand": "Corsair",
+      "category": "ram",
+      "price": 2790000,
+      "oldPrice": 3290000,
+      "specs": [
+        "32GB (2 x 16GB)",
+        "DDR5 6000MHz",
+        "RGB"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/ram-corsair.webp"
+    },
+    {
+      "id": "ssd-samsung",
+      "name": "Ổ cứng SSD Samsung 990 PRO 1TB NVMe M.2",
+      "brand": "Samsung",
+      "category": "ssd",
+      "price": 2290000,
+      "oldPrice": 2890000,
+      "specs": [
+        "1TB",
+        "PCIe Gen 4.0",
+        "7.450 MB/s"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/ssd-samsung.webp"
+    },
+    {
+      "id": "monitor-asus",
+      "name": "Màn hình ASUS TUF Gaming VG249Q3A 24 inch",
+      "brand": "ASUS",
+      "category": "monitor",
+      "price": 2990000,
+      "oldPrice": 3590000,
+      "specs": [
+        "Full HD IPS",
+        "180Hz",
+        "1ms"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/monitor-asus.webp"
+    },
+    {
+      "id": "pc-gaming",
+      "name": "PC TechZone Nova – i5 14400F / RTX 4060 / 16GB",
+      "brand": "TechZone",
+      "category": "pc",
+      "price": 18990000,
+      "oldPrice": 21990000,
+      "specs": [
+        "Intel Core i5",
+        "RTX 4060 8GB",
+        "SSD 512GB"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/pc-gaming.webp"
+    },
+    {
+      "id": "keyboard",
+      "name": "Bàn phím cơ Logitech G PRO X RGB",
+      "brand": "Logitech",
+      "category": "accessories",
+      "price": 2190000,
+      "oldPrice": 2690000,
+      "specs": [
+        "GX Blue Switch",
+        "Tenkeyless",
+        "LIGHTSYNC RGB"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/keyboard.webp"
+    },
+    {
+      "id": "mouse",
+      "name": "Chuột gaming Logitech G502 HERO",
+      "brand": "Logitech",
+      "category": "accessories",
+      "price": 890000,
+      "oldPrice": 1190000,
+      "specs": [
+        "25.600 DPI",
+        "11 nút lập trình",
+        "RGB"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/mouse.webp"
+    },
+    {
+      "id": "cooler",
+      "name": "Tản nhiệt nước Cooler Master ML240L V2 ARGB",
+      "brand": "Cooler Master",
+      "category": "cooling",
+      "price": 1790000,
+      "oldPrice": 2190000,
+      "specs": [
+        "240mm",
+        "ARGB",
+        "Intel / AMD"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/cooler.webp"
+    },
+    {
+      "id": "psu",
+      "name": "Nguồn Corsair RM750e 750W 80 Plus Gold",
+      "brand": "Corsair",
+      "category": "psu",
+      "price": 2390000,
+      "oldPrice": 2790000,
+      "specs": [
+        "750W",
+        "80 Plus Gold",
+        "Full Modular"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/psu.webp"
+    },
+    {
+      "id": "case",
+      "name": "Vỏ case NZXT H5 Flow Black",
+      "brand": "NZXT",
+      "category": "case",
+      "price": 1890000,
+      "oldPrice": 2290000,
+      "specs": [
+        "Mid Tower",
+        "Kính cường lực",
+        "Airflow"
+      ],
+      "featured": true,
+      "stock": 15,
+      "image": "/images/case.webp"
+    }
+  ],
+  "content": {
+    "articles": [
+      {
+        "id": "news-1",
+        "title": "Build PC 20 triệu: Cấu hình nào đáng mua nhất 2026?",
+        "body": "Một bộ PC tốt không chỉ nằm ở thông số. Đó là sự cân bằng giữa CPU, GPU và nhu cầu sử dụng thực tế.\n\nVới ngân sách 20 triệu, Intel Core i5-14400F kết hợp GeForce RTX 4060 mang lại trải nghiệm Full HD mượt mà. RAM 16GB là mức khởi đầu hợp lý; nâng lên 32GB nếu bạn làm đồ họa hoặc đa nhiệm.\n\nĐừng tiết kiệm quá mức cho bộ nguồn. Nguồn 650W đạt chuẩn 80 Plus từ thương hiệu uy tín giúp hệ thống vận hành ổn định. SSD NVMe 1TB và case thông thoáng sẽ hoàn thiện cấu hình.\n\nLiên hệ TechZone để được tư vấn cấu hình phù hợp và lắp ráp miễn phí.",
+        "extra": "Tư vấn cấu hình",
+        "image": "/images/news-1.jpg",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "news-2",
+        "title": "DDR4 hay DDR5: Đâu là lựa chọn phù hợp cho bạn?",
+        "body": "DDR5 cung cấp băng thông cao hơn, phù hợp các nền tảng mới. DDR4 vẫn là lựa chọn tiết kiệm và đủ tốt cho chơi game Full HD.\n\nHãy kiểm tra loại RAM mà mainboard hỗ trợ trước khi mua. DDR4 và DDR5 không thể lắp thay thế cho nhau. Với máy mới, 32GB DDR5 là lựa chọn dài hạn đáng cân nhắc.",
+        "extra": "Kiến thức công nghệ",
+        "image": "/images/news-2.jpg",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "news-3",
+        "title": "5 mẹo nâng cấp góc gaming mà không tốn quá nhiều",
+        "body": "Bắt đầu bằng cách sắp xếp dây cáp, vệ sinh bàn và đặt màn hình ngang tầm mắt.\n\nMột con chuột vừa tay, bàn phím phù hợp và ánh sáng dịu sẽ tạo khác biệt lớn. Hãy ưu tiên trải nghiệm sử dụng thay vì chỉ chạy theo RGB.",
+        "extra": "Góc gaming",
+        "image": "/images/news-3.jpg",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ],
+    "comments": [],
+    "contacts": [],
+    "faqs": [
+      {
+        "id": "faq-1",
+        "title": "TechZone có hỗ trợ lắp ráp PC miễn phí không?",
+        "body": "Có. TechZone lắp ráp, đi dây và kiểm tra độ ổn định miễn phí khi bạn mua trọn bộ linh kiện tại cửa hàng.",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "faq-2",
+        "title": "Tôi có thể thanh toán bằng hình thức nào?",
+        "body": "TechZone hỗ trợ thanh toán khi nhận hàng (COD). Bạn cần đăng nhập trước khi đặt hàng.",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "faq-3",
+        "title": "Phí vận chuyển được tính như thế nào?",
+        "body": "Phí giao hàng mặc định 30.000₫. Miễn phí cho đơn từ 2.000.000₫ sau giảm giá. Phí chính xác được hiển thị trước khi xác nhận.",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "faq-4",
+        "title": "Chính sách bảo hành và đổi trả ra sao?",
+        "body": "Sản phẩm được bảo hành chính hãng theo thời hạn ghi trên từng sản phẩm. Hỗ trợ đổi sản phẩm lỗi kỹ thuật trong 7 ngày sau khi kiểm tra.",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "faq-5",
+        "title": "Làm thế nào để hủy đơn hàng?",
+        "body": "Vui lòng liên hệ TechZone để được hỗ trợ hủy đơn trước khi giao hàng. Việc hủy đơn do quản trị viên xác nhận.",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ],
+    "company": [
+      {
+        "id": "company-1",
+        "title": "Công nghệ cho mọi đam mê.",
+        "body": "TechZone là điểm đến của những người yêu công nghệ. Chúng tôi mang đến linh kiện chính hãng, những cấu hình được tuyển chọn kỹ lưỡng và dịch vụ tận tâm.\n\nTừ góc học tập đầu tiên đến cỗ máy sáng tạo chuyên nghiệp, TechZone luôn đồng hành cùng bạn. Minh bạch về giá, rõ ràng về bảo hành và tư vấn đúng nhu cầu là những điều chúng tôi cam kết.",
+        "extra": "123 Nguyễn Văn Linh, Quận 7, TP. Hồ Chí Minh",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ],
+    "services": [
+      {
+        "id": "service-1",
+        "title": "Tư vấn & lắp ráp PC",
+        "body": "Lựa chọn linh kiện tương thích, tối ưu theo ngân sách. Lắp ráp, đi dây gọn gàng và kiểm thử trước khi bàn giao.",
+        "extra": "Miễn phí khi mua trọn bộ",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "service-2",
+        "title": "Vệ sinh & bảo dưỡng",
+        "body": "Vệ sinh chuyên sâu, thay keo tản nhiệt và kiểm tra nhiệt độ giúp máy hoạt động mát và ổn định.",
+        "extra": "Từ 150.000₫",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "service-3",
+        "title": "Nâng cấp & sửa chữa",
+        "body": "Kiểm tra, chẩn đoán và nâng cấp RAM, SSD, card đồ họa theo đúng nhu cầu sử dụng.",
+        "extra": "Báo giá trước khi thực hiện",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ],
+    "pricing": [
+      {
+        "id": "price-1",
+        "title": "Lắp ráp PC trọn bộ",
+        "body": "Miễn phí khi mua linh kiện tại TechZone",
+        "extra": "0",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "price-2",
+        "title": "Vệ sinh PC cơ bản",
+        "body": "Vệ sinh bụi, kiểm tra quạt và nhiệt độ",
+        "extra": "150000",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "price-3",
+        "title": "Vệ sinh chuyên sâu & thay keo",
+        "body": "Vệ sinh toàn bộ, thay keo CPU chất lượng cao",
+        "extra": "300000",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "price-4",
+        "title": "Cài đặt hệ điều hành",
+        "body": "Cài đặt driver; bản quyền phần mềm tính riêng",
+        "extra": "200000",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "price-5",
+        "title": "Lắp đặt linh kiện nâng cấp",
+        "body": "Kiểm tra tương thích và kiểm thử hệ thống",
+        "extra": "100000",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ],
+    "settings": [
+      {
+        "id": "setting-phone",
+        "title": "Hotline",
+        "body": "1800 6868",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "setting-email",
+        "title": "Email hỗ trợ",
+        "body": "hello@techzone.vn",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "setting-hours",
+        "title": "Giờ làm việc",
+        "body": "08:30 – 21:00, Thứ 2 – Chủ nhật",
+        "extra": "",
+        "image": "",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ],
+    "media": [
+      {
+        "id": "media-0",
+        "title": "Góc công nghệ 1",
+        "body": "Ảnh biên tập · Unsplash",
+        "extra": "",
+        "image": "/images/news-1.jpg",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "media-1",
+        "title": "Góc công nghệ 2",
+        "body": "Ảnh biên tập · Unsplash",
+        "extra": "",
+        "image": "/images/news-2.jpg",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      },
+      {
+        "id": "media-2",
+        "title": "Góc công nghệ 3",
+        "body": "Ảnh biên tập · Unsplash",
+        "extra": "",
+        "image": "/images/news-3.jpg",
+        "status": "published",
+        "createdAt": "2026-05-18T09:00:00.000Z"
+      }
+    ]
+  },
+  "shipping": {
+    "fee": 30000,
+    "freeFrom": 2000000
+  }
+}

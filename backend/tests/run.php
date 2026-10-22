@@ -7,6 +7,8 @@ use App\Core\Database;
 use App\Core\Response;
 use App\Core\Router;
 use App\Core\View;
+use App\Core\ApiException;
+use App\Support\Money;
 use App\Modules\Order\Entities\OrderStatus;
 use App\Modules\User\Entities\User;
 use App\Modules\User\Entities\UserRole;
@@ -34,6 +36,21 @@ test('Order transitions match BR-08; terminal states cannot change', static func
     foreach (OrderStatus::cases() as $from) {
         foreach (OrderStatus::cases() as $to) {
             check($from->canTransitionTo($to) === in_array($from->value . ':' . $to->value, $allowed, true), 'Invalid state transition.');
+        }
+    }
+});
+test('Money calculations remain exact at DECIMAL limits and reject overflow', static function (): void {
+    check(Money::decimal(Money::minor('9999999999999.99')) === '9999999999999.99', 'Decimal precision lost.');
+    check(Money::minor('1.1') === 110 && Money::minor('0.01') === 1, 'Minor unit conversion failed.');
+    check(Money::discount(101, 5000) === 51, 'Half-up discount rounding failed.');
+    check(Money::discount(Money::MAX, 10000) === Money::MAX, 'Discount overflowed.');
+    foreach ([static fn () => Money::minor('-1'), static fn () => Money::minor('1.001'),
+        static fn () => Money::minor('1e3'), static fn () => Money::multiply(Money::MAX, 2)] as $operation) {
+        try {
+            $operation();
+            throw new LogicException('Invalid money accepted.');
+        } catch (ApiException) {
+            // Expected validation response.
         }
     }
 });

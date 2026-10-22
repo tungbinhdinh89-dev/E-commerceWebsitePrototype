@@ -1,4 +1,6 @@
 import { useState, type CSSProperties } from "react"
+import { useRemoteList } from "./useRemoteData"
+import RemotePager from "./RemotePager"
 import {
   Button,
   IconButton,
@@ -38,13 +40,14 @@ import {
 import { useShop } from "./shop-context"
 import { api } from "./service"
 import {
-  categories,
   cmsGroups,
   money,
   orderLabels,
   type CmsGroup,
   type Content,
   type Product,
+  type User,
+  type Order,
 } from "./data"
 import { Empty, go, ProductImage, Title, categoryName } from "./ui"
 import { OrderCard } from "./StorePages"
@@ -66,6 +69,7 @@ const contentStatusLabels = {
   pending: "Chờ duyệt",
   hidden: "Ẩn / Bản nháp",
   new: "Mới tiếp nhận",
+  read: "Đã đọc",
   resolved: "Đã xử lý",
 }
 const emptyContent: Content = {
@@ -92,10 +96,8 @@ const blankProduct: Product = {
 
 function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
   const { db } = useShop()
-  const revenue = db.orders
-    .filter((o) => o.status === "delivered")
-    .reduce((s, o) => s + o.total, 0)
-  const pending = db.orders.filter((o) => o.status === "pending").length
+  const revenue = db.metrics.revenue
+  const pending = db.metrics.pendingOrders
   const metrics = [
     {
       icon: DollarSign,
@@ -107,22 +109,22 @@ function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
     {
       icon: ShoppingCart,
       title: "Tổng đơn hàng",
-      value: db.orders.length,
+      value: db.metrics.orders,
       note: `${pending} đơn đang chờ xác nhận`,
       section: "orders",
     },
     {
       icon: Package,
       title: "Sản phẩm đang bán",
-      value: db.products.length,
-      note: `${db.products.filter((p) => p.stock < 5).length} sản phẩm sắp hết hàng`,
+      value: db.metrics.products,
+      note: `${db.metrics.lowStock} sản phẩm sắp hết hàng`,
       section: "products",
     },
     {
       icon: Users,
       title: "Thành viên",
-      value: db.users.filter((u) => u.role === "MEMBER").length,
-      note: `${db.subscribers.length} email đăng ký nhận tin`,
+      value: db.metrics.members,
+      note: `${db.metrics.subscribers} email đăng ký nhận tin`,
       section: "users",
     },
   ]
@@ -131,12 +133,14 @@ function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
     date.setDate(date.getDate() - (6 - i))
     return date
   })
-  const counts = dates.map(
-    (d) =>
-      db.orders.filter(
-        (o) => new Date(o.createdAt).toDateString() === d.toDateString(),
-      ).length,
-  )
+  const counts = dates.map((date) => {
+    const key = [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, "0"),
+      String(date.getDate()).padStart(2, "0"),
+    ].join("-")
+    return db.metrics.days.find((entry) => entry.date === key)?.count ?? 0
+  })
   return (
     <>
       <div className="admin-welcome">
@@ -215,19 +219,17 @@ function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
             },
             {
               title: "Bình luận chờ kiểm duyệt",
-              count: db.content.comments.filter((c) => c.status === "pending")
-                .length,
+              count: db.metrics.pendingComments,
               section: "comments",
             },
             {
               title: "Yêu cầu liên hệ mới",
-              count: db.content.contacts.filter((c) => c.status === "new")
-                .length,
+              count: db.metrics.unreadContacts,
               section: "contacts",
             },
             {
               title: "Sản phẩm sắp hết hàng",
-              count: db.products.filter((p) => p.stock < 5).length,
+              count: db.metrics.lowStock,
               section: "products",
             },
           ].map((item) => (
@@ -245,13 +247,10 @@ function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
               <ArrowRight size={16} />
             </Button>
           ))}
-          <div className="admin-demo-note">
+          <div className="admin-data-note">
             <ShieldCheck size={22} />
-            <strong>Không có dữ liệu giả trong báo cáo</strong>
-            <p>
-              Thống kê được tính từ đơn hàng và dữ liệu hiện có trong trình
-              duyệt.
-            </p>
+            <strong>Báo cáo hoạt động cửa hàng</strong>
+            <p>Thống kê được cập nhật từ hoạt động thực tế của cửa hàng.</p>
           </div>
         </section>
       </div>
@@ -290,7 +289,7 @@ function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
                       <Badge
                         label={orderLabels[order.status]}
                         variant={
-                          order.status === "delivered" ? "success" : "warning"
+                          order.status === "completed" ? "success" : "warning"
                         }
                       />
                     </td>
@@ -316,15 +315,19 @@ function Dashboard({ navigate }: { navigate: (s: Section) => void }) {
 }
 function Products() {
   const { db, act, busy } = useShop()
+  const categories = db.categories
+  const [page, setPage] = useState(1)
   const [query, setQuery] = useState("")
   const [category, setCategory] = useState("")
   const [editing, setEditing] = useState<Product | null>(null)
   const [deleting, setDeleting] = useState<Product | null>(null)
-  const products = db.products.filter(
-    (p) =>
-      (!category || p.category === category) &&
-      `${p.name} ${p.brand}`.toLowerCase().includes(query.toLowerCase()),
-  )
+  const remote = useRemoteList<Product>("products", {
+    admin: 1,
+    q: query,
+    category,
+    page,
+  })
+  const products = remote.items
   function field<K extends keyof Product>(key: K, value: Product[K]) {
     setEditing((p) => (p ? { ...p, [key]: value } : null))
   }
@@ -335,13 +338,15 @@ function Products() {
         action={
           <Button
             iconStart={<Plus size={16} />}
-            onClick={() => setEditing({ ...blankProduct })}
+            onClick={() =>
+              setEditing({ ...blankProduct, category: categories[0]?.id ?? "" })
+            }
           >
             Thêm sản phẩm
           </Button>
         }
       >
-        Sản phẩm <span className="muted">({db.products.length})</span>
+        Sản phẩm <span className="muted">({remote.pagination.total})</span>
       </Title>
       <div className="surface">
         <div className="admin-toolbar">
@@ -349,7 +354,10 @@ function Products() {
             aria-label="Tìm sản phẩm"
             placeholder="Tìm theo tên, thương hiệu..."
             value={query}
-            onChange={setQuery}
+            onChange={(value) => {
+              setQuery(value)
+              setPage(1)
+            }}
             prefix={<Search size={16} />}
           />
           <SelectField
@@ -431,6 +439,12 @@ function Products() {
           )}
         </div>
       </div>
+      <RemotePager
+        pagination={remote.pagination}
+        onPage={setPage}
+        loading={remote.loading}
+        error={remote.error}
+      />
       <Modal
         isOpen={!!editing}
         onClose={() => setEditing(null)}
@@ -503,7 +517,19 @@ function Products() {
               label="Đường dẫn hình ảnh"
               value={editing.image}
               onChange={(v) => field("image", v)}
-              placeholder="/images/... hoặc https://..."
+              placeholder="Chọn ảnh tải lên bên dưới"
+              readOnly
+            />
+            <input
+              aria-label="Tải ảnh sản phẩm"
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              disabled={busy}
+              onChange={(event) => {
+                const file = event.target.files?.[0]
+                if (file)
+                  void act(async () => field("image", await api.upload(file)))
+              }}
             />
             <TextareaField
               label="Thông số (mỗi dòng một thông số)"
@@ -568,29 +594,36 @@ function Orders() {
   const { db } = useShop()
   const [status, setStatus] = useState("")
   const [query, setQuery] = useState("")
-  const orders = db.orders.filter(
-    (o) =>
-      (!status || o.status === status) &&
-      `${o.id} ${o.name} ${o.phone}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  )
+  const [page, setPage] = useState(1)
+  const remote = useRemoteList<Order>("orders", {
+    admin: 1,
+    q: query,
+    status,
+    page,
+  })
+  const orders = remote.items
   return (
     <>
       <Title sub="Xác nhận, giao hàng và theo dõi mọi đơn hàng.">
-        Đơn hàng ({db.orders.length})
+        Đơn hàng ({remote.pagination.total})
       </Title>
       <div className="surface admin-toolbar">
         <InputField
           aria-label="Tìm đơn hàng"
           value={query}
-          onChange={setQuery}
+          onChange={(value) => {
+            setQuery(value)
+            setPage(1)
+          }}
           placeholder="Mã đơn, khách hàng, số điện thoại..."
           prefix={<Search size={16} />}
         />
         <SelectField
           value={status}
-          onChange={setStatus}
+          onChange={(value) => {
+            setStatus(value)
+            setPage(1)
+          }}
           options={[
             { value: "", label: "Tất cả trạng thái" },
             ...Object.entries(orderLabels).map(([value, label]) => ({
@@ -611,23 +644,34 @@ function Orders() {
           />
         )}
       </div>
+      <RemotePager
+        pagination={remote.pagination}
+        onPage={setPage}
+        loading={remote.loading}
+        error={remote.error}
+      />
     </>
   )
 }
 function UsersPage() {
   const { db, act, busy, user } = useShop()
   const [query, setQuery] = useState("")
+  const [page, setPage] = useState(1)
+  const remote = useRemoteList<User>("users", { admin: 1, q: query, page })
   return (
     <>
       <Title sub="Theo dõi thành viên và quản lý quyền truy cập.">
-        Tài khoản ({db.users.length})
+        Tài khoản ({remote.pagination.total})
       </Title>
       <div className="surface">
         <div className="admin-toolbar">
           <InputField
             aria-label="Tìm thành viên"
             value={query}
-            onChange={setQuery}
+            onChange={(value) => {
+              setQuery(value)
+              setPage(1)
+            }}
             prefix={<Search size={16} />}
             placeholder="Tìm tên hoặc email..."
           />
@@ -645,53 +689,47 @@ function UsersPage() {
               </tr>
             </thead>
             <tbody>
-              {db.users
-                .filter((u) =>
-                  `${u.name} ${u.email}`
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-                )
-                .map((u) => (
-                  <tr key={u.id}>
-                    <td>
-                      <strong>{u.name}</strong>
-                      <small>{u.email}</small>
-                    </td>
-                    <td>
-                      <Badge
-                        label={u.role}
-                        variant={u.role === "ADMIN" ? "brand" : "secondary"}
-                      />
-                    </td>
-                    <td>{u.phone || "—"}</td>
-                    <td>{db.orders.filter((o) => o.userId === u.id).length}</td>
-                    <td>
-                      <Badge
-                        label={u.active ? "Đang hoạt động" : "Đã khóa"}
-                        variant={u.active ? "success" : "danger"}
-                      />
-                    </td>
-                    <td>
-                      <Button
-                        variant="neutral"
-                        size="small"
-                        disabled={busy || u.id === user?.id}
-                        onClick={() =>
-                          void act(
-                            () => api.toggleUser(u.id),
-                            "Đã cập nhật trạng thái tài khoản.",
-                          )
-                        }
-                      >
-                        {u.id === user?.id
-                          ? "Bạn"
-                          : u.active
-                            ? "Khóa tài khoản"
-                            : "Mở khóa"}
-                      </Button>
-                    </td>
-                  </tr>
-                ))}
+              {remote.items.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <strong>{u.name}</strong>
+                    <small>{u.email}</small>
+                  </td>
+                  <td>
+                    <Badge
+                      label={u.role}
+                      variant={u.role === "ADMIN" ? "brand" : "secondary"}
+                    />
+                  </td>
+                  <td>{u.phone || "—"}</td>
+                  <td>{u.orderCount ?? 0}</td>
+                  <td>
+                    <Badge
+                      label={u.active ? "Đang hoạt động" : "Đã khóa"}
+                      variant={u.active ? "success" : "danger"}
+                    />
+                  </td>
+                  <td>
+                    <Button
+                      variant="neutral"
+                      size="small"
+                      disabled={busy || u.id === user?.id}
+                      onClick={() =>
+                        void act(
+                          () => api.toggleUser(u.id),
+                          "Đã cập nhật trạng thái tài khoản.",
+                        )
+                      }
+                    >
+                      {u.id === user?.id
+                        ? "Bạn"
+                        : u.active
+                          ? "Khóa tài khoản"
+                          : "Mở khóa"}
+                    </Button>
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -700,6 +738,12 @@ function UsersPage() {
           trò STAFF.
         </p>
       </div>
+      <RemotePager
+        pagination={remote.pagination}
+        onPage={setPage}
+        loading={remote.loading}
+        error={remote.error}
+      />
     </>
   )
 }
@@ -751,13 +795,14 @@ function CMS({ group }: { group: CmsGroup }) {
   const [status, setStatus] = useState("")
   const [editing, setEditing] = useState<Content | null>(null)
   const [deleting, setDeleting] = useState<Content | null>(null)
-  const records = db.content[group].filter(
-    (c) =>
-      (!status || c.status === status) &&
-      `${c.title} ${c.body} ${c.extra}`
-        .toLowerCase()
-        .includes(query.toLowerCase()),
-  )
+  const [page, setPage] = useState(1)
+  const remote = useRemoteList<Content>(group, {
+    admin: 1,
+    q: query,
+    status,
+    page,
+  })
+  const records = remote.items
   const isInbox = group === "contacts" || group === "comments"
   function field<K extends keyof Content>(key: K, value: Content[K]) {
     setEditing((c) => (c ? { ...c, [key]: value } : null))
@@ -789,7 +834,7 @@ function CMS({ group }: { group: CmsGroup }) {
           )
         }
       >
-        {cmsGroups[group]} ({db.content[group].length})
+        {cmsGroups[group]} ({remote.pagination.total})
       </Title>
       {group === "settings" && <ShippingSettings />}
       <div className="surface">
@@ -797,13 +842,19 @@ function CMS({ group }: { group: CmsGroup }) {
           <InputField
             aria-label="Tìm nội dung"
             value={query}
-            onChange={setQuery}
+            onChange={(value) => {
+              setQuery(value)
+              setPage(1)
+            }}
             prefix={<Search size={16} />}
             placeholder="Tìm trong nội dung..."
           />
           <SelectField
             value={status}
-            onChange={setStatus}
+            onChange={(value) => {
+              setStatus(value)
+              setPage(1)
+            }}
             options={[
               { value: "", label: "Tất cả trạng thái" },
               ...Object.entries(contentStatusLabels).map(([value, label]) => ({
@@ -952,6 +1003,12 @@ function CMS({ group }: { group: CmsGroup }) {
           />
         )}
       </div>
+      <RemotePager
+        pagination={remote.pagination}
+        onPage={setPage}
+        loading={remote.loading}
+        error={remote.error}
+      />
       <Modal
         isOpen={!!editing}
         onClose={() => setEditing(null)}
@@ -998,10 +1055,24 @@ function CMS({ group }: { group: CmsGroup }) {
             )}
             {["articles", "media", "company", "services"].includes(group) && (
               <InputField
-                label="URL hình ảnh"
+                label="Ảnh trên máy chủ"
                 value={editing.image}
                 onChange={(v) => field("image", v)}
-                placeholder="https://..."
+                placeholder="Chọn ảnh tải lên bên dưới"
+                readOnly
+              />
+            )}
+            {["articles", "media", "company"].includes(group) && (
+              <input
+                aria-label="Tải ảnh nội dung"
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                disabled={busy}
+                onChange={(event) => {
+                  const file = event.target.files?.[0]
+                  if (file)
+                    void act(async () => field("image", await api.upload(file)))
+                }}
               />
             )}
             <SelectField
@@ -1011,8 +1082,10 @@ function CMS({ group }: { group: CmsGroup }) {
               options={Object.entries(contentStatusLabels)
                 .filter(([value]) =>
                   group === "contacts"
-                    ? ["new", "resolved"].includes(value)
-                    : ["published", "pending", "hidden"].includes(value),
+                    ? ["new", "read", "resolved"].includes(value)
+                    : ["articles", "comments", "company"].includes(group)
+                      ? ["published", "pending", "hidden"].includes(value)
+                      : ["published", "hidden"].includes(value),
                 )
                 .map(([value, label]) => ({ value, label }))}
             />
@@ -1096,7 +1169,6 @@ export default function Admin() {
         <Button variant="neutral" onClick={() => go("/")}>
           <ArrowLeft size={16} /> Về cửa hàng
         </Button>
-        <p className="fine">Demo: admin@techzone.vn / Techzone123</p>
       </div>
     )
   return (
@@ -1130,12 +1202,9 @@ export default function Admin() {
             onClick={() => navigate(id as Section)}
           >
             {label}
-            {id === "orders" &&
-              db.orders.some((o) => o.status === "pending") && (
-                <span className="admin-count">
-                  {db.orders.filter((o) => o.status === "pending").length}
-                </span>
-              )}
+            {id === "orders" && db.metrics.pendingOrders > 0 && (
+              <span className="admin-count">{db.metrics.pendingOrders}</span>
+            )}
           </Button>
         ))}
         <div className="admin-nav-label">QUẢN LÝ NỘI DUNG</div>
@@ -1165,15 +1234,15 @@ export default function Admin() {
             variant="subtle"
             iconStart={<LogOut size={18} />}
             onClick={() =>
-              sync(() => {
-                api.logout()
+              sync(async () => {
+                await api.logout()
                 go("/")
               })
             }
           >
             Đăng xuất
           </Button>
-          <span>TECHZONE ADMIN · FRONTEND DEMO</span>
+          <span>TECHZONE ADMIN</span>
         </div>
       </aside>
       <div className="admin-main">
@@ -1201,7 +1270,7 @@ export default function Admin() {
           </div>
           <div className="admin-user">
             <span className="admin-live">
-              <span /> Local demo
+              <span /> Đã kết nối
             </span>
             <div className="avatar-small">TZ</div>
             <div>
@@ -1224,8 +1293,7 @@ export default function Admin() {
           )}
         </main>
         <div className="admin-bottom-note">
-          TechZone Admin · Dữ liệu được lưu trên trình duyệt · Sẵn sàng kết nối
-          API PHP / MySQL
+          TechZone Admin · Dữ liệu được lưu và kiểm tra trên máy chủ
         </div>
       </div>
     </div>

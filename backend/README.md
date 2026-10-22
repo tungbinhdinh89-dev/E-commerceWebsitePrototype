@@ -1,90 +1,87 @@
 # Backend — Computer Store
 
-PHP 8.3 thuần/OOP, MVC tự viết, PDO MySQL theo [rules](../rules.md) và [spec](../spec.md). Không framework/ORM. Đã có 15 entities, enums, sáu migration, demo catalog seed, router, danh mục SSR và tìm kiếm Fetch. Xem [schema, ERD và quyết định dữ liệu](database/README.md).
+PHP 8.3 thuần/OOP, MVC và PDO MySQL theo [rules](../rules.md) và [spec](../spec.md). Không framework/ORM. Backend phục vụ React qua JSON theo quyết định chuyển tiếp DB-03; catalog PHP server-rendered tiếp tục hoạt động. Xem [schema và ownership](database/README.md).
 
-## Kết nối NAS hiện tại
+## Kết nối NAS
 
-Theo DB-02, database chạy trong container `mysql_nas` trên Synology NAS **192.168.1.200:32771** (port 32771 của NAS map tới 3306 trong container). Server đã xác nhận **MySQL 26.7.0**. Baseline 8.x và 26.7.x được backend hỗ trợ; MariaDB không phải target. [Release notes chính thức MySQL 26.7](https://dev.mysql.com/doc/relnotes/mysql/26.7/en/).
-
-Connection string PDO:
+Container `mysql_nas` tại **192.168.1.200:32771**, map vào 3306 trong container. Server hiện tại là MySQL **26.7.0** theo DB-02; cấu trúc SQL giữ baseline MySQL/InnoDB/utf8mb4/PDO.
 
 ```text
 mysql:host=192.168.1.200;port=32771;dbname=computer_store;charset=utf8mb4
 ```
 
-User/password truyền riêng qua DB_USERNAME/DB_PASSWORD trong **backend/.env** đang được Git ignore, không nằm trong DSN hay mã nguồn. .env.example có host/port và tên DB mẫu, không có mật khẩu. Không cần cài MySQL hoặc Docker trên PC khi dùng NAS.
+Truyền username/password riêng qua `DB_USERNAME`/`DB_PASSWORD` trong `backend/.env`. Không đặt credentials trong DSN, source hoặc frontend. PC không cần chạy container MySQL khác khi dùng NAS.
 
-## Cài trên Windows
+## Cài và chạy
 
-Chạy từ root dự án:
+Từ root trên Windows:
 
 ```powershell
 npm run backend:setup
+# Sao chép .env.example sang .env nếu chưa có; điền cấu hình riêng.
 npm run backend:connection
 npm run backend:init
 npm run backend:migrate
-npm run backend:seed
+npm run backend:create-admin
+npm run backend:seed-store
 npm run backend:doctor
-npm run backend:test
-npm run backend:test-db
 npm run dev:backend
 ```
 
-backend:setup tải PHP 8.3 NTS x64 và Composer 2 vào **.tools/**; kiểm SHA-256 của PHP và SHA-384 của Composer installer. PHP tải từ downloads.php.net, CA bundle từ curl.se cho TLS. Không thay PATH, registry, XAMPP hoặc cài Windows service. Cần mạng và Microsoft Visual C++ 2015–2022 x64 runtime. Binaries/cache bị ignore. Nếu archive tải dở/checksum sai, xóa đúng archive đó trong .tools/downloads rồi thử lại. Sau setup, scripts backend tự dùng PHP portable; không cần sửa PATH toàn máy.
+`backend:setup` tải PHP 8.3 NTS x64, Composer 2 và CA bundle vào `.tools/`, kiểm checksum; không sửa PATH/registry hay tạo Windows service. Cần Microsoft Visual C++ 2015–2022 x64 runtime. Máy hiện tại dùng PHP **8.3.36**. Scripts tự chọn PHP portable; đặt `PHP_BINARY` nếu cần dùng bản khác.
 
-backend:connection chỉ đọc server version và danh sách bảng trong DB cấu hình, xuất DSN không chứa credentials. backend:init kết nối server theo .env và tạo **computer_store** / **computer_store_test** nếu chưa có, không drop/truncate DB/bảng hoặc ghi đè .env. Migrations chỉ tác động DB ứng dụng; integration tests chỉ chạy trong DB riêng có đuôi _test.
+Máy đã có PHP: cần **fileinfo, mbstring, PDO/PDO MySQL**, chạy `composer install --working-dir=backend`. Composer chỉ cung cấp PSR-4 autoload. Có thể dùng `php backend/console.php migrate` và các command trong console trực tiếp. Biến shell ưu tiên hơn `.env`; loader hỗ trợ KEY=value, quote, comment nguyên dòng, không interpolation.
 
-Khi dùng NAS, để container chạy trên NAS và chạy `npm run dev:backend` tại PC; Ctrl+C dừng PHP dev server. Không dùng backend:start-db/backend:stop-db cho NAS. Nếu cần instance local tùy chọn, script setup hỗ trợ -InstallLocalMySql và helper `node scripts/backend.mjs init-local`; đó là môi trường riêng, không phải cấu hình mặc định.
+`backend:init` tạo DB ứng dụng và DB test nếu chưa có; không drop/truncate hoặc ghi đè `.env`. `backend:connection` chỉ đọc kết nối/version/bảng, không xuất credentials. `backend:migrate` áp dụng bảy migration có checksum; không sửa SQL đã áp dụng.
 
-## Dùng môi trường đã có / hệ điều hành khác
+`backend:seed-store` nạp nội dung công khai từ JSON một lần bằng transaction và ledger `data_seeds`; không ghi đè chỉnh sửa sau đó. Seed không tạo tài khoản/đơn hàng. Seed cũ `backend:seed` chỉ thêm ba sản phẩm demo, không cần chạy cho UI mới.
 
-PHP **8.3** cần fileinfo, mbstring, PDO/PDO MySQL. MySQL **8.x >= 8.0.16** hoặc **26.7.x** trên NAS theo DB-02; MariaDB của XAMPP không phải target. Nguồn cài: [PHP Windows](https://www.php.net/downloads.php?os=windows&version=8.3), [Composer](https://getcomposer.org/download/).
+Tạo admin bằng `BOOTSTRAP_ADMIN_EMAIL` và `BOOTSTRAP_ADMIN_PASSWORD` (16–72 byte) trong `.env`/shell rồi chạy `backend:create-admin`. Không có HTTP endpoint đăng ký Admin. Lệnh không đổi mật khẩu admin đã tồn tại. Credentials admin đã tạo tại máy này ở file private `.tools/admin-credentials.json` trong root.
 
-1. `composer install --working-dir=backend` để tạo PSR-4 autoload.
-2. Copy backend/.env.example thành backend/.env; điền DB_HOST/PORT/DATABASE/USERNAME/PASSWORD cho DB riêng. Tạo database utf8mb4 và DB test có đuôi _test nếu cần integration tests.
-3. Đặt PHP 8.3 trên PATH, hoặc `$env:PHP_BINARY='C:\path\to\php.exe'` trong PowerShell. .tools/php/php.exe được ưu tiên khi có.
-4. Chạy backend:migrate, backend:seed, backend:doctor và dev:backend ở root. Có thể dùng `php backend/console.php migrate` / `seed` hoặc `php backend/tests/run.php` trực tiếp.
+## Frontend và HTTP
 
-Environment loader hỗ trợ KEY=value, quote, comment nguyên dòng; không interpolation/multiline/inline comment. Biến shell được ưu tiên. APP_DEBUG không làm lộ exception qua HTTP; dùng doctor/CLI để kiểm tra setup.
+Hai terminal chạy `npm run dev:backend` và `npm run dev`. UI **http://localhost:8443/** dùng Fetch cùng origin; Vite proxy tới PHP **127.0.0.1:8000**. Đổi `BACKEND_PORT` và `BACKEND_URL` tương ứng ở hai terminal nếu cần.
 
-## Frontend ↔ backend
+| Route | Chức năng |
+| --- | --- |
+| `GET /api/health` | Trạng thái database/schema, không lộ SQL/credentials |
+| `GET /api/store` | Bootstrap công khai + dữ liệu theo session; chỉ user hiện tại, giỏ/yêu thích/đơn đúng quyền |
+| `GET /api/store/list/{resource}` | Search/filter, SQL LIMIT/OFFSET; `{items,pagination}` |
+| `GET /api/store/item/{resource}/{id}` | Chi tiết products/articles/orders, kiểm trạng thái và ownership |
+| `POST /api/store/{action}` | Form JSON, CSRF và PHP Session; kiểm quyền tại server |
+| `POST /api/store/admin-upload` | Multipart trường image, Admin + CSRF; trả local path |
+| `GET /products`, `/products/{slug}` | Catalog PHP Views hoạt động khi tắt JS |
+| `GET /api/products` | Progressive search cho catalog SSR |
 
-Hai terminal trong giai đoạn phát triển:
+Resources: products, articles, comments, contacts, faqs, users, orders, company, services, pricing, settings, media. `admin=1` luôn yêu cầu Admin. Contacts/users chỉ Admin; orders theo user; bình luận public gắn với bài đã xuất bản và đã duyệt.
 
-```powershell
-# Terminal 1: PHP 8.3 + MySQL sẵn sàng
-npm run dev:backend
+Actions: login/register/logout/profile, cart-add/cart-quantity/favorite/checkout/comment/contact/newsletter; admin-product-save/delete, admin-user-toggle, admin-order-status, admin-shipping, admin-content-save/delete. Response `{success,data,message,errors}`, giá DECIMAL là string. POST JSON gửi `X-CSRF-Token` từ snapshot; token đổi sau login/logout. Upload dùng FormData và cùng header. Không mở CORS.
 
-# Terminal 2
-npm run dev
-```
+Cookie HttpOnly/SameSite Lax, đổi session ID khi login/logout; file session ở `backend/.cache/sessions/` được ignore. Password dùng password_hash/password_verify và allowlist DTO, không xuất hash. Có giới hạn thử đăng nhập theo IP/email. Frontend chỉ cache RAM, lỗi backend không fallback mock.
 
-- React prototype: http://localhost:8443/ (hash routes và mock localStorage).
-- Danh mục PHP thật: http://localhost:8000/products hoặc http://localhost:8443/products qua Vite proxy.
-- Chi tiết sau seed: /products/demo-intel-core-i5-14400f.
-- Health: /api/health; chỉ báo database/schema ready, không xuất credentials/SQL.
-- GET /api/products?q=Intel&page=1: JSON {success,data,message,errors}, giá decimal string, 12 sản phẩm/trang. Endpoint dùng cho progressive search trong PHP catalog.
+## Ranh giới nghiệp vụ
 
-Nếu chạy npm run dev lần nữa khi server cùng dự án đã mở trên 8443, launcher nhận diện server và báo URL để dùng lại, không khởi động thêm rồi báo lỗi trùng port. Nếu port thuộc chương trình khác, launcher báo rõ và hướng dẫn `npm run dev -- --port 8444`; không tự dừng chương trình đó.
+`Application.php` wiring thủ công một PDO cho các module. `StoreController` parse request, gọi Service, trả Response; SQL trong Repository. Catalog sở hữu giá/tồn kho; Sales gọi CatalogService trong cùng transaction. Identity sở hữu user/session; Editorial lấy tên tác giả qua UserService. Guest cart theo PHP Session, Member cart/yêu thích theo MySQL.
 
-PHP đọc template từ **frontend/resources/views/**. View không gọi Repository/SQL. Luồng: Router → ProductController → ProductQueryService → ProductRepository → PDO; wiring thủ công. frontend/public/catalog.js tăng cường form/phân trang bằng Fetch; HTML/form/link vẫn hoạt động khi tắt JS. DB không lấy dữ liệu localStorage; React vẫn là prototype theo rules.
+Checkout tính tiền bằng integer minor units, đọc lại giá và khóa inventory theo ID, lưu snapshot tên/SKU/giá/ảnh, trừ kho và xóa giỏ cùng transaction. Client total chỉ để phát hiện thay đổi; không được tin làm giá. Hủy chỉ Admin từ pending/confirmed, khóa order và hoàn kho một lần. `completed/cancelled` là trạng thái cuối.
 
-dev:backend copy frontend/public/ sang backend/public/assets/ cho ảnh/CSS/JS nội bộ. Chạy lại sau khi sửa static assets. Đổi BACKEND_PORT cho PHP và BACKEND_URL tương ứng cho terminal Vite nếu cần; PHP mặc định chỉ lắng nghe loopback 8000.
+Upload kiểm Fileinfo, kích thước ảnh, giới hạn 5 MB và tên random; chỉ JPG/PNG/WebP. `uploads/.htaccess` chặn script; dev router chỉ phục vụ định dạng ảnh cho phép. Metadata media lưu MySQL, file ảnh ở server. Dịch vụ/bảng giá dùng chung bảng services và cùng vòng đời dữ liệu.
 
-## Apache và webroot
+## Triển khai
 
-Production dùng Apache/mod_rewrite, **DocumentRoot = backend/public/**, AllowOverride All để áp dụng .htaccess và Options -Indexes. Copy frontend/public vào backend/public/assets khi deploy; không cần Node ở runtime PHP. Views, app, config, vendor, .env nằm ngoài webroot. Bản portable NTS dùng CLI dev server; PHP Apache module trên Windows cần bản TS phù hợp theo tài liệu PHP.
+DocumentRoot PHP **backend/public/**; không public `.env`, app, vendor hoặc config. Apache/mod_rewrite cần AllowOverride All/Options -Indexes. `dev:backend` copy `frontend/public/` sang `backend/public/assets/`; chạy lại sau khi sửa static assets. Production React cần build và reverse proxy cùng origin tới PHP, hoặc web server phục vụ UI từ dist và PHP từ webroot riêng. Catalog SSR chạy không cần React build.
 
-backend/public/uploads/.htaccess chặn script; dev router chỉ public JPG/PNG/WebP dưới uploads. Chưa có upload endpoint. Khi bổ sung phải kiểm MIME Fileinfo, kích thước, tên random và validation server như rules.
+NTS portable dành cho CLI dev server. PHP template ở `frontend/resources/views/`; View escape dữ liệu, không gọi SQL. HTTPS production cần cookie Secure; dev server không phải server production.
 
-## Phạm vi hiện tại và kiểm tra
-
-Đã triển khai nền DB-01 và lát cắt đọc Catalog FR-PRO-01/02/03: search tên/SKU, phân trang SQL, active-only, detail 404, escape HTML và JSON. Admin CRUD, PHP Session/RBAC/CSRF, checkout/cancel, upload và các trang nội dung còn lại **chưa triển khai**. Schema là nền cho các service đó; backend MVP chưa hoàn tất.
+## Kiểm thử và giới hạn
 
 ```powershell
 npm run backend:lint
 npm run backend:test
 npm run backend:test-db
+npm run backend:test-http
 ```
 
-Đã kiểm tra môi trường hiện tại: PHP **8.3.36**, các extension, Composer autoload; migration/seed/doctor trên NAS **MySQL 26.7.0**; 7 unit tests và 9 database integration tests đạt. HTTP qua Vite proxy kiểm tra health, catalog MySQL, PHP server-rendered HTML, detail và ảnh nội bộ. Các flow checkout/cancel/auth/admin chưa nằm trong kết quả này. Unit tests độc lập với DB/Composer; test-db chỉ dùng DB _test. Không có instance MySQL local được cài để chạy các kiểm tra trên.
+Unit tests độc lập DB. Database tests kiểm constraint/seed/snapshot và rollback. HTTP tests dùng PHP cổng tạm và `computer_store_test`, kiểm session/CSRF, quyền, CMS, upload, checkout rollback/ownership và concurrency checkout/cancel. Fixtures có prefix ngẫu nhiên và dọn sau test; runner từ chối DB không có đuôi `_test`. Chưa xác nhận trên instance MySQL 8 riêng; môi trường kiểm thực tế là NAS 26.7.0.
+
+Đã kết nối các luồng đang có trên React với MySQL. Chưa hoàn tất toàn bộ P0: chuyển UI sang PHP Views/TailAdmin, quản trị danh mục chuyên biệt, đổi/reset mật khẩu/avatar, SEO toàn site, W3C và kiểm thử trình duyệt cần triển khai/nghiệm thu tiếp. Chưa tích hợp email, thanh toán online hoặc giao hàng bên thứ ba.

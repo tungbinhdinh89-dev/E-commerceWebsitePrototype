@@ -19,8 +19,11 @@
     "backend:doctor": "node scripts/backend.mjs doctor",
     "backend:migrate": "node scripts/backend.mjs migrate",
     "backend:seed": "node scripts/backend.mjs seed",
+    "backend:seed-store": "node scripts/backend.mjs seed-store",
+    "backend:create-admin": "node scripts/backend.mjs create-admin",
     "backend:test": "node scripts/backend.mjs test",
     "backend:test-db": "node scripts/backend.mjs test-db",
+    "backend:test-http": "node backend/tests/http.mjs",
     "backend:lint": "node scripts/backend.mjs lint",
     "dev:backend": "node scripts/backend.mjs serve"
   },

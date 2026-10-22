@@ -1,140 +1,88 @@
 # TechZone / Computer Store
 
-Website bán máy tính và linh kiện theo `rules.md` và `spec.md`.
+Website bán máy tính và linh kiện. React hiện lấy dữ liệu từ backend PHP 8.3/PDO và MySQL trên NAS. Quyết định chuyển tiếp DB-03 trong [rules.md](rules.md) và [spec.md](spec.md) cho phép giữ UI này khi tiếp tục xây dựng bản PHP Views theo kiến trúc mục tiêu.
 
-## Cấu trúc thư mục
+## Chạy dự án
 
-```text
-E-commerceWebsitePrototype/
-├── frontend/
-│   ├── src/                  # UI React và dữ liệu mô phỏng localStorage
-│   ├── public/               # Ảnh, favicon và static assets của UI
-│   ├── resources/views/      # Dành cho PHP Views khi tích hợp bản hoàn chỉnh
-│   ├── tests/                # Test service mô phỏng và React context
-│   ├── index.html
-│   ├── vite.config.ts
-│   ├── tsconfig.json
-│   └── package.json          # Dependencies và scripts frontend
-├── backend/                  # Khung PHP MVC theo rules/spec
-│   ├── app/{Core,Middleware,Modules,Support}/
-│   ├── config/
-│   ├── database/{migrations,seeders}/
-│   ├── public/uploads/
-│   ├── routes/
-│   ├── tests/
-│   ├── composer.json
-│   └── .env.example
-├── skills/                   # Skills của agent
-├── guidelines/               # Hướng dẫn AI/design system
-├── plans/                    # Kế hoạch và tài liệu agent
-├── .session-plans/
-├── .cursor/
-├── .claude-plugin/
-├── .figma/                   # Cấu hình môi trường Figma Make
-├── .figaro/
-├── AGENTS.md, CLAUDE.md, CURSOR.md
-├── rules.md, spec.md
-├── package.json              # Điều phối lệnh từ root qua npm workspace
-├── pnpm-workspace.yaml
-├── pnpm-lock.yaml
-└── .mise.toml
-```
-
-UI hiện tại là **frontend prototype React 19, TypeScript, Vite 8, Tailwind v4 và Astra UI**, chạy bằng dữ liệu trong trình duyệt. Backend đã có 15 entities, sáu migration MySQL và danh mục PHP server-rendered tại `frontend/resources/views/`; xem [hướng dẫn backend](backend/README.md) và [schema/ERD](backend/database/README.md). Các flow nghiệp vụ còn lại chưa triển khai.
-
-## Chạy UI frontend
-
-Mở terminal tại **root dự án**. Dùng Node.js 22.12 trở lên trong dòng Node 22 và pnpm 10.34.3 theo `.mise.toml`.
+Từ root, dùng Node.js 22.12+ trong dòng Node 22 và pnpm theo `.mise.toml`:
 
 ```sh
 pnpm install --frozen-lockfile
+npm run dev:backend
+```
+
+Mở terminal thứ hai:
+
+```sh
 npm run dev
 ```
 
-Sau khi dependencies đã cài, lệnh `npm run dev` không cần gọi pnpm. Nếu dùng npm để cài dependencies, `npm install` từ root cũng nhận workspace `frontend`.
+Truy cập **http://localhost:8443/**; trang quản trị tại **http://localhost:8443/#/admin**. Frontend proxy `/api`, `/uploads`, `/products` và `/assets` tới PHP tại `127.0.0.1:8000`. Cả PHP và MySQL phải hoạt động; UI báo lỗi kết nối và cho thử lại nếu backend chưa sẵn sàng.
 
-Truy cập **http://localhost:8443**. Lệnh root chạy Vite trong `frontend/` và dùng lại server cùng dự án nếu đã mở trên cổng đó; có thể dùng `npm run dev -- --port 8444` để đổi cổng hoặc đặt biến môi trường `PORT`. Cổng thuộc ứng dụng khác sẽ được báo rõ, không tự dừng ứng dụng đó. Dừng server bằng `Ctrl+C` trong terminal chạy lệnh. Trong Figma Make, dùng preview panel nếu môi trường đã có server.
+`npm run dev` dùng lại Vite của cùng dự án nếu đã chạy. Đổi cổng bằng `npm run dev -- --port 8444` hoặc `PORT`. Dừng server bằng `Ctrl+C` trong terminal tương ứng. `npm run build` xuất `frontend/dist/`; bản build cần được phục vụ cùng origin với PHP hoặc reverse proxy các đường dẫn trên. Deploy riêng dist không cung cấp backend API.
+
+## Khởi tạo backend trên máy mới
+
+Xem [backend/README.md](backend/README.md) cho cấu hình đầy đủ. Trên Windows:
 
 ```sh
-npm run build       # Xuất frontend/dist/
-npm run typecheck   # Kiểm tra TypeScript của frontend
-npm test            # Chạy cả hai file test frontend
-npm run preview    # Xem bản đã build
+npm run backend:setup
+# Sao chép backend/.env.example thành backend/.env rồi điền credentials riêng.
+npm run backend:connection
+npm run backend:init
+npm run backend:migrate
+npm run backend:create-admin
+npm run backend:seed-store
+npm run backend:doctor
 ```
 
-## Stack bản hoàn chỉnh theo rules/spec
+`backend:create-admin` đọc `BOOTSTRAP_ADMIN_EMAIL` và `BOOTSTRAP_ADMIN_PASSWORD` trong môi trường local; mật khẩu phải có 16–72 byte. Lệnh chỉ tạo admin nếu chưa có, không đổi mật khẩu tài khoản đã tồn tại. Không có tài khoản demo hay mật khẩu mặc định. Member đăng ký qua UI và được gán quyền tại server.
 
-- PHP 8.3 thuần/OOP, MVC tự triển khai, server-rendered views.
-- MySQL 8.x, InnoDB, `utf8mb4`, PDO prepared statements.
-- Bootstrap 5 cho public UI.
-- TailAdmin Free cho admin UI (tích hợp PHP Views; tài nguyên template phải được nhóm kiểm tra license trước khi đưa vào).
-- Composer chỉ dùng PSR-4 autoload và thư viện độc lập; không dùng PHP framework/CMS.
+Máy hiện tại có PHP **8.3.36** trong `.tools/` và MySQL **26.7.0** trên NAS **192.168.1.200:32771**, database `computer_store`. Credentials DB ở `backend/.env` được ignore. Thông tin admin đã tạo cho máy này ở `.tools/admin-credentials.json`, cũng được ignore; không đưa file này vào Git hoặc bản deploy.
 
-### Backend và tích hợp PHP
+## Dữ liệu và chức năng
 
-Xem [backend/README.md](backend/README.md) cho sơ đồ module và ranh giới MVC. Khi triển khai backend, môi trường cần PHP 8.3 với `fileinfo`, `pdo`, `pdo_mysql`, Composer, MySQL 8 và Apache/mod_rewrite. `backend/composer.json` khai báo môi trường và PSR-4 autoload; `backend/.env.example` là mẫu cấu hình.
+- Sản phẩm, danh mục, thương hiệu, giá, tồn kho, search/filter/pagination lấy từ MySQL.
+- Đăng ký/đăng nhập, hồ sơ, khóa tài khoản và quyền quản trị do PHP Session/RBAC xử lý; thao tác ghi kiểm CSRF.
+- Giỏ Member và yêu thích lưu MySQL; giỏ/yêu thích Guest theo PHP Session. Giỏ Guest được gộp khi đăng nhập.
+- Checkout COD tính lại giá, coupon, phí giao hàng tại server; transaction khóa tồn kho, lưu snapshot đơn và xóa giỏ. Admin chuyển trạng thái/hủy từ pending/confirmed, hoàn kho một lần. Member chỉ xem đơn của mình.
+- Tin tức, bình luận kiểm duyệt, FAQ, công ty, dịch vụ/bảng giá, cài đặt, media, liên hệ và email nhận tin lưu qua backend. Dashboard tổng hợp từ MySQL.
+- Upload JPG/PNG/WebP tối đa 5 MB lên server, kiểm MIME/kích thước/tên file; không dùng URL ảnh ngoài thay upload.
 
-Webroot PHP là **`backend/public/`**; PHP Views đặt trong **`frontend/resources/views/`**. Migration/seed thuộc `backend/database/`; ảnh upload thuộc `backend/public/uploads/`. Danh mục đầu tiên đi qua Controller → Service → Repository → PDO, có search/pagination và Fetch enhancement. Bản React tiếp tục dùng để xem thử UI; không phải runtime chính của bản PHP.
+`frontend/src/data.ts` chỉ chứa types, nhãn và trạng thái rỗng. `frontend/src/service.ts` dùng Fetch, giữ cache RAM và tải lại sau thao tác ghi; không đọc/ghi localStorage, không sinh dữ liệu khi backend lỗi. Dữ liệu localStorage của prototype cũ không được nhập vào MySQL.
 
-Trên Windows: `npm run backend:setup`, cấu hình `backend/.env`, rồi `npm run backend:connection`, `npm run backend:init`, `npm run backend:migrate`, `npm run backend:seed`, `npm run dev:backend`. PHP/Composer cài riêng trong `.tools/`; MySQL dùng container NAS tại **192.168.1.200:32771**, phiên bản thực **26.7.0** được bổ sung theo DB-02 trong rules/spec. Credentials chỉ nằm trong .env được ignore. Mở **http://localhost:8000/products** hoặc **http://localhost:8443/products** qua Vite proxy. Xem backend README cho cấu hình, test và phần chưa triển khai.
+Nội dung công khai ban đầu chuyển sang `backend/database/seeders/store-content.json`, nạp **một lần** bằng `backend:seed-store`; không có tài khoản, đơn hàng hoặc dữ liệu cá nhân mẫu. Chạy lại không ghi đè chỉnh sửa admin. `backend:seed` là seed catalog tối thiểu cũ, dùng độc lập khi cần; không bắt buộc cho UI hiện tại.
 
-## TailAdmin
+React/Astra hiện chưa hoàn tất yêu cầu PHP Views/TailAdmin. Catalog SSR vẫn chạy tại `/products`; xem backend README về phần còn thiếu. Thanh toán online, email và hãng vận chuyển chưa tích hợp.
 
-TailAdmin Free là template được yêu cầu cho bản admin PHP. Giữ source asset trong `frontend/`, tích hợp markup vào `frontend/resources/views/layouts/admin.php` và xuất asset vào webroot PHP khi triển khai. Kiểm tra license trước khi đưa tài nguyên template vào; runtime backend dùng PHP theo rules/spec.
+## Cấu trúc
 
-## Preview and demo accounts
+```text
+frontend/src/                 React UI, types và Fetch adapter
+frontend/resources/views/     PHP Views catalog SSR
+frontend/public/              Static assets nội bộ
+backend/app/                  Controller → Service → Repository → PDO
+backend/database/             SQL migrations, seed nội dung
+backend/public/uploads/       Ảnh upload, không version control
+backend/tests/                Unit, MySQL integration và HTTP tests
+scripts/                      Launcher Vite/PHP, setup môi trường
+rules.md, spec.md             Kiến trúc, phạm vi và quyết định tích hợp
+```
 
-Tài khoản demo dùng trong UI prototype:
-
-| Role | Email | Password |
-| --- | --- | --- |
-| Member | `member@techzone.vn` | `Techzone123` |
-| Admin | `admin@techzone.vn` | `Techzone123` |
-
-Use **Đăng nhập / Đăng ký**, then choose a demo account. Open `#/admin` for the separate admin workspace. New accounts are always members.
-
-This is a simulation: no real payments, deliveries, email or server-side security. Do not enter real credentials or sensitive personal data.
-
-## Implemented flows
-
-- Search, category / brand / price / stock filters, sorting, pagination, product details and favorites.
-- Guest and member carts, guest-cart merge on sign-in, quantity and stock validation.
-- Authenticated COD checkout, `TECHZONE5` discount (5%, capped at 500,000₫), shipping after discounts.
-- Default shipping: 30,000₫, free from 2,000,000₫. Both values are configurable in admin.
-- Order history, delivery details and profile editing.
-- Member cancellation only while pending; admin cancellation before shipping. Stock is restored exactly once.
-- News, moderated comments, contact submissions, FAQ, company, services and pricing pages.
-- Admin product CRUD, stock/pricing edits, user lock/unlock, order state transitions and real local-data reporting.
-- All nine approved CMS groups: articles, comments, contacts, FAQs, company content, services, service pricing, site settings, media.
-- CMS media stores image URLs; it does not upload files to a server.
-
-## Architecture
-
-- `frontend/src/data.ts`: types and seeded mock data.
-- `frontend/src/service.ts`: shared asynchronous mock service, authorization checks and atomic localStorage updates.
-- `frontend/src/context.tsx`: shared state subscriptions, notifications and authentication dialog.
-- `frontend/src/App.tsx`: storefront shell, homepage and hash navigation.
-- `frontend/src/StorePages.tsx`: shopping, checkout and account.
-- `frontend/src/ContentPages.tsx`: editorial and informational pages.
-- `frontend/src/Admin.tsx`: independent management workspace.
-- `frontend/src/index.css`: centralized TechZone tokens and responsive Astra extensions.
-
-The versioned store key is `techzone.database.v1`. Data persists only in this browser and is not shared across devices or browsers. Clear the website's browser storage to reset the demo. Client-side authorization is only a UX simulation; PHP must revalidate authentication, roles, prices, coupons and inventory in database transactions.
-
-## Verification
+## Kiểm tra
 
 ```sh
 npm run build
 npm run typecheck
 npm test
-npm run format -- src
-npm run backend:lint       # Cần PHP 8.3
+npm run backend:lint
 npm run backend:test
-npm run backend:test-db    # Cần MySQL 8, DB riêng có đuôi _test
+npm run backend:test-db
+npm run backend:test-http
 ```
 
-Formatting uses the repository's `oxfmt` script. Multi-property TypeScript object types are deliberately multiline to avoid an issue in the installed formatter with inline semicolons.
+Integration tests chỉ dùng database riêng có đuôi `_test`, mặc định `computer_store_test`. HTTP tests khởi động PHP ở cổng tạm, tạo/dọn fixtures riêng; có kiểm hai checkout tranh tồn kho và hai yêu cầu hủy đồng thời. Frontend tests kiểm Fetch/CSRF/cache/quyền riêng tư và React context. Format frontend bằng `npm run format -- src`; giữ object type TypeScript nhiều thuộc tính ở dạng nhiều dòng vì formatter hiện tại xử lý sai dấu phân cách của type viết cùng dòng.
 
 ## Image credits
 
-Local product illustrations are sourced from publicly available manufacturer/retailer product photography (GEARVN / Hstatic) for this educational prototype and may depict a representative model. Editorial photos: Agung Raharja, Back2Gaming and Olivie Zemanova via Unsplash. Replace or license product imagery appropriately before commercial use.
+Local product illustrations are sourced from publicly available manufacturer/retailer photography (GEARVN / Hstatic) for this educational project and may depict a representative model. Editorial photos: Agung Raharja, Back2Gaming and Olivie Zemanova via Unsplash. Replace or license imagery appropriately before commercial use.

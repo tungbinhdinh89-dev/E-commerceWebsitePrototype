@@ -1,5 +1,7 @@
 import type { ReactNode } from "react"
+
 import { Button, IconButton } from "@figma/astraui"
+
 import {
   Cpu,
   CircuitBoard,
@@ -18,32 +20,52 @@ import {
   Plus,
   PackageSearch,
 } from "lucide-react"
-import { categories, money, type Product } from "./data"
+
+import { money, type Product } from "./data"
+
+import { api } from "./service"
 
 export const categoryIcons = {
   cpu: Cpu,
+
   mainboard: CircuitBoard,
+
   gpu: Monitor,
+
   ram: MemoryStick,
+
   ssd: HardDrive,
+
   psu: Power,
+
   case: PcCase,
+
   cooling: Fan,
+
   monitor: Monitor,
+
   accessories: Keyboard,
+
   pc: Gamepad2,
 }
+
 export function go(path: string) {
   window.location.hash = path
+
   window.scrollTo({ top: 0, behavior: "smooth" })
 }
+
 export function Title({
   children,
+
   sub,
+
   action,
 }: {
   children: ReactNode
+
   sub?: string
+
   action?: ReactNode
 }) {
   return (
@@ -58,13 +80,18 @@ export function Title({
     </div>
   )
 }
+
 export function NavLink({
   to,
+
   children,
+
   className = "",
 }: {
   to: string
+
   children: ReactNode
+
   className?: string
 }) {
   return (
@@ -77,21 +104,26 @@ export function NavLink({
     </Button>
   )
 }
+
 export function ProductImage({
   product,
+
   className = "",
 }: {
   product: Pick<Product, "image" | "name" | "category">
+
   className?: string
 }) {
   const Fallback =
     categoryIcons[(product.category as keyof typeof categoryIcons)] ?? Monitor
+
   return (
     <div className={`product-visual ${className}`}>
       <Fallback className="product-fallback" strokeWidth={1} />
       <img
         src={product.image.replace(
           /^\/images\/([a-z-]+)\.png$/,
+
           "/images/$1.webp",
         )}
         alt={product.name}
@@ -103,21 +135,29 @@ export function ProductImage({
     </div>
   )
 }
+
 export function ProductCard({
   product,
+
   add,
+
   favorite,
+
   liked,
 }: {
   product: Product
+
   add: () => void
+
   favorite: () => void
+
   liked: boolean
 }) {
   const discount =
     product.oldPrice > product.price
       ? Math.round((1 - product.price / product.oldPrice) * 100)
       : 0
+
   return (
     <article className="product-card">
       <div className="product-top">
@@ -178,13 +218,18 @@ export function ProductCard({
     </article>
   )
 }
+
 export function Quantity({
   value,
+
   change,
+
   max,
 }: {
   value: number
+
   change: (n: number) => void
+
   max: number
 }) {
   return (
@@ -209,13 +254,18 @@ export function Quantity({
     </div>
   )
 }
+
 export function Empty({
   title,
+
   body,
+
   action,
 }: {
   title: string
+
   body: string
+
   action?: ReactNode
 }) {
   return (
@@ -229,6 +279,7 @@ export function Empty({
     </div>
   )
 }
+
 export function Breadcrumb({ name }: { name: string }) {
   return (
     <div className="breadcrumb">
@@ -238,6 +289,7 @@ export function Breadcrumb({ name }: { name: string }) {
     </div>
   )
 }
+
 export function categoryName(id: string) {
-  return categories.find((c) => c.id === id)?.short ?? id
+  return api.snapshot().categories.find((c) => c.id === id)?.short ?? id
 }

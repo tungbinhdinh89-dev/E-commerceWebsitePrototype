@@ -11,6 +11,14 @@ use App\Modules\Product\Repositories\ProductRepository;
 use App\Modules\Product\Services\ProductQueryService;
 
 $router = new Router();
+$store = static function (): \App\Http\StoreController {
+    \App\Core\Session::start();
+    return new \App\Http\StoreController(new \App\Application(Database::connect(require dirname(__DIR__) . '/config/database.php')));
+};
+$router->get('/api/store', static fn () => $store()->snapshot());
+$router->get('/api/store/list/{resource}', static fn (string $resource) => $store()->listing($resource));
+$router->get('/api/store/item/{resource}/{id}', static fn (string $resource, string $id) => $store()->item($resource, $id));
+$router->post('/api/store/{action}', static fn (string $action) => $store()->mutate($action));
 // Lazy wiring: unknown routes do not open a database connection.
 $catalog = static function (): ProductController {
     $pdo = Database::connect(require dirname(__DIR__) . '/config/database.php');

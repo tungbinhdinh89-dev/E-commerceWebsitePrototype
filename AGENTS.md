@@ -1,6 +1,6 @@
 # figma-make-app
 
-Computer Store / TechZone repository: a React + Vite + Tailwind CSS frontend prototype and an initial PHP/MySQL application. Read `rules.md` and `spec.md` for the target PHP MVC architecture. The React app remains a UI prototype; the PHP backend has entities, SQL migrations and a read-only server-rendered catalog. See `backend/README.md` for setup and remaining features.
+Computer Store / TechZone repository: React + Vite + Tailwind CSS UI backed by a PHP 8.3/MySQL modular monolith. Read `rules.md` and `spec.md`; DB-03 permits the existing React UI to use PHP JSON during migration toward PHP Views/TailAdmin. The backend implements persistence for the existing store/admin flows and retains its server-rendered catalog. See `backend/README.md` for setup and remaining P0 work.
 
 ## Development Server
 
@@ -28,11 +28,11 @@ This is the canonical project structure. Start with task-relevant files below. O
 - `skills/`, `guidelines/`, `plans/`, `.session-plans/`, `.cursor/`, `.claude-plugin/`, `AGENTS.md`, `CLAUDE.md`, `CURSOR.md` - AI instructions and tools; keep these at the repository root
 - `.figma/` and `.figaro/` - Root Figma environment metadata; frontend Vite reads `../.figma/make/site.json`
 
-`frontend/src/service.ts` and `frontend/src/data.ts` simulate data in the browser. Keep them with the prototype. Backend business logic belongs in PHP modules under `backend/app/Modules/` and must follow the boundaries in `rules.md`.
+`frontend/src/service.ts` is a Fetch adapter with a memory cache; `data.ts` contains types/labels/empty state. Do not reintroduce localStorage, browser password hashes or mock fallback. `useRemoteData.ts` loads paginated lists/items from PHP. Business logic belongs in PHP modules under `backend/app/Modules/`, with boundaries in `rules.md`; `Application.php` wires services and `Http/StoreController.php` maps JSON requests.
 
 ## Verification
 
-Run from the repository root: `npm run build`, `npm run typecheck`, and `npm test`. `npm run dev` must serve the frontend UI at `http://localhost:8443` unless `$PORT` or `--port` overrides it; it reuses an existing server from this project. Production frontend output is `frontend/dist/`; Figma deploy scripts use that directory. PHP changes use `npm run backend:lint`, `npm run backend:test` and `npm run backend:test-db`. The configured NAS MySQL server is `192.168.1.200:32771` (26.7.x permitted by DB-02); credentials belong only in ignored `backend/.env`. See `backend/README.md` for PHP 8.3 setup and catalog URLs.
+Run from root: `npm run build`, `npm run typecheck`, `npm test`. `npm run dev` serves `http://localhost:8443` unless `$PORT`/`--port` overrides it and reuses this project's server. Run `npm run dev:backend` alongside it for PHP on port 8000. Vite proxies `/api`, `/uploads`, `/products`, `/assets`. Production frontend output is `frontend/dist/`; it needs the PHP API on the same origin. PHP checks: `backend:lint`, `backend:test`, `backend:test-db`, `backend:test-http`; integration tests must use a separate `_test` DB. NAS MySQL is `192.168.1.200:32771` (26.7.x per DB-02); credentials only in ignored `.env`/`.tools`. Seed public content once via `backend:seed-store`; no demo accounts. Never edit applied SQL migrations.
 
 ## Dependencies
 

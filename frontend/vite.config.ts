@@ -52,7 +52,7 @@ export default defineConfig(({ mode }) => {
       port: parseInt(process.env.PORT || '8443'),
       strictPort: true,
       proxy: Object.fromEntries(
-        ['/api', '/products', '/assets'].map((prefix) => [prefix, {
+        ['/api', '/products', '/assets', '/uploads'].map((prefix) => [prefix, {
           target: process.env.BACKEND_URL || 'http://127.0.0.1:8000',
           changeOrigin: true,
         }]),

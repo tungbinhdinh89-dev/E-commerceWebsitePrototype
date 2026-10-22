@@ -27,7 +27,7 @@ import {
 import ShopProvider from "./context"
 import { useShop } from "./shop-context"
 import { api } from "./service"
-import { categories, money } from "./data"
+import { money } from "./data"
 import { go, NavLink, Title, ProductCard, categoryIcons } from "./ui"
 const StorePages = lazy(() => import("./StorePages"))
 const ContentPages = lazy(() => import("./ContentPages"))
@@ -90,7 +90,7 @@ function Header({ route }: { route: string }) {
             </NavLink>
             <span>
               <Phone size={12} /> Hotline:{" "}
-              <strong>{setting("setting-phone", "1800 6868")}</strong>
+              <strong>{setting("setting-phone", "Chưa cập nhật")}</strong>
             </span>
           </div>
         </div>
@@ -214,10 +214,12 @@ function Header({ route }: { route: string }) {
   )
 }
 function CategoryList() {
+  const categories = useShop().db.categories
   return (
     <div className="category-list">
       {categories.map((category) => {
-        const Icon = categoryIcons[(category.id as keyof typeof categoryIcons)]
+        const Icon =
+          categoryIcons[(category.id as keyof typeof categoryIcons)] ?? Cpu
         return (
           <Button
             key={category.id}
@@ -273,16 +275,35 @@ function Benefits({ compact = false }: { compact?: boolean }) {
 }
 function Home() {
   const { db, act, sync } = useShop()
+  const categories = db.categories
   const liked = api.favorites(db)
   const [tab, setTab] = useState("all")
   const [slide, setSlide] = useState(0)
-  const [seconds, setSeconds] = useState(8 * 3600 + 42 * 60 + 16)
+  const [seconds, setSeconds] = useState(
+    () =>
+      Math.max(
+        0,
+        Math.floor(
+          (Date.parse(
+            db.content.settings.find((entry) => entry.id === "sale-ends-at")
+              ?.body ?? "",
+          ) -
+            Date.now()) /
+            1000,
+        ),
+      ) || 0,
+  )
   useEffect(() => {
     const timer = setInterval(() => setSeconds((s) => Math.max(0, s - 1)), 1000)
     return () => clearInterval(timer)
   }, [])
   const products = db.products
-    .filter((p) => p.featured && (tab === "all" || p.category === tab))
+    .filter(
+      (p) =>
+        p.status === "active" &&
+        p.featured &&
+        (tab === "all" || p.category === tab),
+    )
     .slice(0, 5)
   return (
     <main className="container home">
@@ -336,7 +357,16 @@ function Home() {
               Sẵn sàng cho mọi trận đấu.
             </p>
             <div className="hero-price">
-              Chỉ từ <strong>18.990.000₫</strong>
+              Chỉ từ{" "}
+              <strong>
+                {money(
+                  Number(
+                    db.content.settings.find(
+                      (entry) => entry.id === "hero-price",
+                    )?.body ?? 0,
+                  ),
+                )}
+              </strong>
             </div>
             <Button
               onClick={() => go("/products?category=pc")}
@@ -418,7 +448,8 @@ function Home() {
             .filter((c) => !["psu", "case", "cooling"].includes(c.id))
             .map((category) => {
               const Icon =
-                categoryIcons[(category.id as keyof typeof categoryIcons)]
+                categoryIcons[(category.id as keyof typeof categoryIcons)] ??
+                Cpu
               return (
                 <Button
                   variant="subtle"
@@ -466,11 +497,9 @@ function Home() {
         <div className="deal-tabs">
           {[
             ["all", "Tất cả"],
-            ["gpu", "Card màn hình"],
-            ["cpu", "CPU"],
-            ["mainboard", "Mainboard"],
-            ["ram", "RAM"],
-            ["ssd", "Ổ cứng"],
+            ...categories
+              .slice(0, 5)
+              .map((category) => [category.id, category.short]),
           ].map(([id, label]) => (
             <Button
               key={id}
@@ -535,31 +564,26 @@ function Home() {
           Lựa chọn cho góc máy của bạn
         </Title>
         <div className="product-grid">
-          {db.products.slice(5, 10).map((p) => (
-            <ProductCard
-              key={p.id}
-              product={p}
-              liked={liked.includes(p.id)}
-              add={() =>
-                void act(() => api.addToCart(p.id), "Đã thêm vào giỏ hàng.")
-              }
-              favorite={() => sync(() => api.favorite(p.id))}
-            />
-          ))}
+          {db.products
+            .filter((p) => p.status === "active")
+            .slice(5, 10)
+            .map((p) => (
+              <ProductCard
+                key={p.id}
+                product={p}
+                liked={liked.includes(p.id)}
+                add={() =>
+                  void act(() => api.addToCart(p.id), "Đã thêm vào giỏ hàng.")
+                }
+                favorite={() => sync(() => api.favorite(p.id))}
+              />
+            ))}
         </div>
       </section>
       <section className="brands-section">
         <span>ĐỒNG HÀNH CÙNG CÁC THƯƠNG HIỆU HÀNG ĐẦU</span>
         <div>
-          {[
-            "ASUS",
-            "msi",
-            "GIGABYTE",
-            "intel",
-            "AMD",
-            "CORSAIR",
-            "SAMSUNG",
-          ].map((brand) => (
+          {db.brands.map((brand) => (
             <Button
               key={brand}
               variant="subtle"
@@ -612,7 +636,11 @@ function Home() {
                   <span>{article.extra}</span>
                   <span>
                     {new Date(article.createdAt).toLocaleDateString("vi-VN")} ·
-                    5 phút đọc
+                    {Math.max(
+                      1,
+                      Math.ceil(article.body.split(/\s+/).length / 200),
+                    )}{" "}
+                    phút đọc
                   </span>
                 </div>
                 <Button
@@ -688,10 +716,10 @@ function Footer() {
             <Headphones size={24} />
             <div>
               <span>Tư vấn mua hàng miễn phí</span>
-              <strong>{settings("setting-phone", "1800 6868")}</strong>
+              <strong>{settings("setting-phone", "Chưa cập nhật")}</strong>
             </div>
           </div>
-          <p>{settings("setting-hours", "08:30 – 21:00, Thứ 2 – Chủ nhật")}</p>
+          <p>{settings("setting-hours", "Chưa cập nhật")}</p>
         </div>
         <div>
           <strong>Về TechZone</strong>
@@ -712,10 +740,10 @@ function Footer() {
           <p>
             <MapPin size={15} />{" "}
             {db.content.company.find((c) => c.status === "published")?.extra ||
-              "TP. Hồ Chí Minh"}
+              "Địa chỉ đang được cập nhật"}
           </p>
           <p>
-            <Mail size={15} /> {settings("setting-email", "hello@techzone.vn")}
+            <Mail size={15} /> {settings("setting-email", "Chưa cập nhật")}
           </p>
           <div className="footer-secure">
             <ShieldCheck size={19} /> Chính hãng · Tận tâm · Minh bạch
@@ -727,10 +755,7 @@ function Footer() {
       </div>
       <div className="container footer-bottom">
         <span>© 2026 TechZone. All rights reserved.</span>
-        <span>
-          Prototype học tập · React + TypeScript · Dữ liệu được lưu trên trình
-          duyệt
-        </span>
+        <span>Đồng hành cùng đam mê công nghệ</span>
         <NavLink to="/policies">Điều khoản & quyền riêng tư</NavLink>
       </div>
     </footer>

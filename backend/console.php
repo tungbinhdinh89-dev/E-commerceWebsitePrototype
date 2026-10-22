@@ -61,7 +61,21 @@ try {
         echo $pending === [] ? '[OK] Schema up to date' . PHP_EOL : '[PENDING] Run npm run backend:migrate' . PHP_EOL;
         exit($pending === [] ? 0 : 1);
     }
-    if ($command === 'migrate') {
+    if ($command === 'create-admin') {
+        $email = App\Core\Environment::get('BOOTSTRAP_ADMIN_EMAIL');
+        $password = App\Core\Environment::get('BOOTSTRAP_ADMIN_PASSWORD');
+        if (!filter_var($email, FILTER_VALIDATE_EMAIL)) throw new RuntimeException('Set BOOTSTRAP_ADMIN_EMAIL and BOOTSTRAP_ADMIN_PASSWORD in the ignored .env first.');
+        $app = new App\Application($pdo);
+        $id = $app->users->provisionAdmin($email, $password);
+        echo 'Admin account ready (ID ' . $id . '). Credentials remain in local configuration.' . PHP_EOL;
+    } elseif ($command === 'seed-store') {
+        if (App\Core\Environment::get('APP_ENV') !== 'local') throw new RuntimeException('Initial store seed is allowed only in local development.');
+        $seed = require __DIR__ . '/database/seeders/store.php';
+        $admin = $pdo->query("SELECT id FROM users WHERE role='admin' AND status='active' ORDER BY id LIMIT 1")->fetchColumn();
+        if (!$admin) throw new RuntimeException('Create an administrator before seeding editorial content.');
+        $seed($pdo, (int) $admin);
+        echo 'Initial catalog/content stored in MySQL. Existing data preserved; seed is not repeated.' . PHP_EOL;
+    } elseif ($command === 'migrate') {
         $completed = (new Migrator($pdo, __DIR__ . '/database/migrations'))->run();
         echo $completed === [] ? 'Schema up to date.' . PHP_EOL : implode(PHP_EOL, $completed) . PHP_EOL;
     } elseif ($command === 'seed') {
@@ -72,7 +86,7 @@ try {
         $seed($pdo);
         echo 'Demo catalog seeded; existing products preserved.' . PHP_EOL;
     } else {
-        throw new RuntimeException('Usage: php console.php [init|connection|doctor|migrate|seed]');
+        throw new RuntimeException('Usage: php console.php [init|connection|doctor|migrate|seed|seed-store|create-admin]');
     }
 } catch (Throwable $error) {
     $message = $error instanceof PDOException

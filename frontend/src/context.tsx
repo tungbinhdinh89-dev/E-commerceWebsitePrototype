@@ -1,7 +1,7 @@
 import { type ReactNode } from "react"
 import { Button, Modal, Toast } from "@figma/astraui"
 import { InputField } from "./fields"
-import { Lock, LogIn, ShieldCheck } from "lucide-react"
+import { Lock, LogIn } from "lucide-react"
 import { api } from "./service"
 import { ShopContext } from "./shop-context"
 import useShopState from "./useShopState"
@@ -19,6 +19,8 @@ export default function ShopProvider({ children }: { children: ReactNode }) {
     setEmail,
     password,
     setPassword,
+    passwordConfirmation,
+    setPasswordConfirmation,
     busy,
     act,
     authError,
@@ -29,7 +31,8 @@ export default function ShopProvider({ children }: { children: ReactNode }) {
     const ok = await act(
       async () => {
         try {
-          if (register) await api.register(name, email, password)
+          if (register)
+            await api.register(name, email, password, passwordConfirmation)
           else await api.login(email, password)
         } catch (error) {
           setAuthError((error as Error).message)
@@ -37,17 +40,56 @@ export default function ShopProvider({ children }: { children: ReactNode }) {
         }
       },
       register
-        ? "Tạo tài khoản thành công. Chào mừng đến TechZone!"
+        ? "Tạo tài khoản thành công. Vui lòng đăng nhập."
         : "Đăng nhập thành công.",
     )
     if (ok) {
-      setAuth(false)
+      setAuth(register)
+      setRegister(false)
       setPassword("")
+      setPasswordConfirmation("")
     }
   }
   return (
     <ShopContext.Provider value={shop}>
-      {children}
+      {!shop.db.ready ? (
+        <main className="container page" role="status">
+          <h1>
+            {shop.db.error
+              ? "Chưa thể tải dữ liệu cửa hàng"
+              : "Đang tải cửa hàng…"}
+          </h1>
+          {shop.db.error && (
+            <>
+              <p role="alert">{shop.db.error}</p>
+              <Button
+                onClick={() => {
+                  void api.refresh().catch(() => {})
+                }}
+              >
+                Thử lại
+              </Button>
+            </>
+          )}
+        </main>
+      ) : (
+        <>
+          {shop.db.error && (
+            <div className="container form-error" role="alert">
+              {shop.db.error}{" "}
+              <Button
+                variant="subtle"
+                onClick={() => {
+                  void api.refresh().catch(() => {})
+                }}
+              >
+                Thử lại
+              </Button>
+            </div>
+          )}
+          {children}
+        </>
+      )}
       <Modal
         isOpen={auth}
         onClose={() => setAuth(false)}
@@ -95,6 +137,17 @@ export default function ShopProvider({ children }: { children: ReactNode }) {
             prefix={<Lock size={16} />}
             autoComplete={register ? "new-password" : "current-password"}
           />
+          {register && (
+            <InputField
+              label="Xác nhận mật khẩu"
+              type="password"
+              required
+              minLength={8}
+              value={passwordConfirmation}
+              onChange={setPasswordConfirmation}
+              autoComplete="new-password"
+            />
+          )}
           {authError && (
             <p className="form-error" role="alert">
               {authError}
@@ -115,44 +168,6 @@ export default function ShopProvider({ children }: { children: ReactNode }) {
               ? "Đã có tài khoản? Đăng nhập"
               : "Chưa có tài khoản? Đăng ký ngay"}
           </Button>
-          <div className="demo-box">
-            <div className="flex items-center gap-md">
-              <ShieldCheck size={16} />
-              <strong>Tài khoản demo</strong>
-            </div>
-            <p>
-              Mật khẩu chung: <strong>Techzone123</strong>
-            </p>
-            <div className="flex flex-wrap gap-md">
-              <Button
-                type="button"
-                variant="neutral"
-                size="small"
-                onClick={() => {
-                  setRegister(false)
-                  setEmail("member@techzone.vn")
-                  setPassword("Techzone123")
-                }}
-              >
-                Khách hàng
-              </Button>
-              <Button
-                type="button"
-                variant="neutral"
-                size="small"
-                onClick={() => {
-                  setRegister(false)
-                  setEmail("admin@techzone.vn")
-                  setPassword("Techzone123")
-                }}
-              >
-                Quản trị viên
-              </Button>
-            </div>
-            <p className="fine">
-              Bản mô phỏng frontend. Không nhập mật khẩu thật.
-            </p>
-          </div>
         </form>
       </Modal>
       {shop.notice && (

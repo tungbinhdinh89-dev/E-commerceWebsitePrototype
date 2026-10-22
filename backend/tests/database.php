@@ -6,6 +6,7 @@ use App\Core\Database;
 use App\Core\Environment;
 use App\Core\Migrator;
 use App\Modules\Product\Repositories\ProductRepository;
+use App\Modules\Product\Repositories\CatalogRepository;
 use App\Modules\Product\Services\ProductQueryService;
 
 require __DIR__ . '/bootstrap.php';
@@ -31,10 +32,10 @@ function rejects(PDO $pdo, string $sql, array $values, int $driverCode): void
     throw new RuntimeException('Database accepted invalid data.');
 }
 
-test('All 15 tables exist; re-running migrations is a no-op', static function () use ($pdo, $migrator): void {
+test('All 21 application/support tables exist; re-running migrations is a no-op', static function () use ($pdo, $migrator): void {
     $count = $pdo->query("SELECT COUNT(*) FROM information_schema.TABLES
         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE' AND TABLE_NAME <> 'schema_migrations'")->fetchColumn();
-    check((int) $count === 15, 'Expected 15 domain tables.');
+    check((int) $count === 21, 'Expected 21 application/support tables.');
     check($migrator->run() === [], 'Migrations are not idempotent.');
 });
 $seed = require dirname(__DIR__) . '/database/seeders/catalog.php';
@@ -110,4 +111,25 @@ try {
 }
 test('Rollback preserves catalog stock', static function () use ($pdo, $productId, $originalStock): void {
     check($pdo->query('SELECT stock FROM products WHERE id = ' . $productId)->fetchColumn() === $originalStock, 'Stock was not rolled back.');
+});
+
+test('Inventory locking reads current price and stock after an older repeatable-read snapshot', static function () use ($pdo, $config): void {
+    $category = (int) $pdo->query('SELECT id FROM categories ORDER BY id LIMIT 1')->fetchColumn();
+    $token = 'locking-' . bin2hex(random_bytes(8));
+    $pdo->prepare("INSERT INTO products(category_id,name,sku,slug,price,stock,description) VALUES(?,'Locking fixture',?,?,100,2,'')")
+        ->execute([$category, $token, $token]);
+    $id = (int) $pdo->lastInsertId();
+    $other = Database::connect($config);
+    try {
+        $pdo->exec('SET TRANSACTION ISOLATION LEVEL REPEATABLE READ');
+        $pdo->beginTransaction();
+        $repository = new CatalogRepository($pdo);
+        check($repository->byIds([$id])[0]['price'] === '100.00', 'Initial read failed.');
+        $other->prepare('UPDATE products SET price=200, stock=1 WHERE id=?')->execute([$id]);
+        $locked = $repository->byIds([$id], true)[0];
+        check($locked['price'] === '200.00' && (int) $locked['stock'] === 1, 'Checkout used stale snapshot values.');
+    } finally {
+        if ($pdo->inTransaction()) $pdo->rollBack();
+        $other->prepare('DELETE FROM products WHERE id=?')->execute([$id]);
+    }
 });

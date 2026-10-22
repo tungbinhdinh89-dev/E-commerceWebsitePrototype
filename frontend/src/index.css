@@ -311,8 +311,6 @@ footer { background: var(--tz-white); }
 .tz-modal { max-height: 90dvh; overflow-y: auto; color: var(--tz-ink); }
 .tz-modal input, .tz-modal textarea, .tz-modal button { font-size: var(--tz-text-base); }
 .tz-modal [role=heading] { font-size: var(--tz-text-section); }
-.demo-box { background: var(--tz-blue-soft); border-radius: var(--corner-md); padding: var(--space-xl); font-size: var(--tz-text-small); display: flex; flex-direction: column; gap: var(--space-md); }
-.demo-box > div:first-child { color: var(--tz-blue); }
 .toast-wrap { position: fixed; z-index: 100; left: 50%; bottom: var(--space-2xl); transform: translateX(-50%); max-width: calc(100% - var(--space-2xl)); box-shadow: var(--tz-shadow-overlay); border-radius: var(--corner-md); }
 .loading-bar { position: fixed; top: 0; height: calc(var(--tz-line) * 3); width: 100%; z-index: 100; background: linear-gradient(90deg, transparent, var(--tz-blue), transparent); background-size: 200% 100%; animation: loading 1s linear infinite; }
 @keyframes loading { from { background-position: 200% 0; } to { background-position: -200% 0; } }
@@ -541,8 +539,8 @@ footer { background: var(--tz-white); }
 .chart-caption { font-size: var(--tz-text-small); color: var(--tz-slate); text-align: center; margin-top: var(--space-xl); }
 .task-row { display: flex; width: 100%; justify-content: flex-start; padding: var(--space-lg) 0; gap: var(--space-xl); height: auto; font-size: var(--tz-text-body); text-align: left; }
 .task-row > span.shrink-0 > span:first-child { flex: 1; }
-.admin-demo-note { margin-top: var(--space-2xl); background: var(--tz-blue-soft); padding: var(--space-xl); border-radius: var(--corner-md); font-size: var(--tz-text-small); display: flex; flex-direction: column; gap: var(--space-md); color: var(--tz-blue); }
-.admin-demo-note p { color: var(--tz-slate); line-height: 1.7; }
+.admin-data-note { margin-top: var(--space-2xl); background: var(--tz-blue-soft); padding: var(--space-xl); border-radius: var(--corner-md); font-size: var(--tz-text-small); display: flex; flex-direction: column; gap: var(--space-md); color: var(--tz-blue); }
+.admin-data-note p { color: var(--tz-slate); line-height: 1.7; }
 .admin-toolbar { display: flex; gap: var(--space-xl); align-items: center; margin-bottom: var(--space-xl); }
 .admin-toolbar > div:first-child { flex: 1; max-width: calc(var(--space-xl) * 32); }
 .admin-toolbar > div:nth-child(2) { min-width: calc(var(--space-xl) * 14); }

@@ -1,163 +1,312 @@
-import test from "node:test";
-import assert from "node:assert/strict";
-import { readFile } from "node:fs/promises";
-import ts from "typescript";
+import test from "node:test"
 
-// Transpile in memory so the shared browser service can be tested without a server.
-const compile = (source) => ts.transpileModule(source, {
-  compilerOptions: { module: ts.ModuleKind.ESNext, target: ts.ScriptTarget.ES2022 },
-}).outputText;
-const moduleUrl = (source) => `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`;
-const dataUrl = moduleUrl(compile(await readFile(new URL("../src/data.ts", import.meta.url), "utf8")));
-const source = compile(await readFile(new URL("../src/service.ts", import.meta.url), "utf8"))
-  .replace(/from ["']\.\/data["']/g, `from "${dataUrl}"`);
-const store = new Map();
-globalThis.localStorage = {
-  getItem: (key) => store.get(key) ?? null,
-  setItem: (key, value) => store.set(key, value),
-};
-const { api } = await import(moduleUrl(source));
-const { cmsGroups } = await import(dataUrl);
-const member = () => api.login("member@techzone.vn", "Techzone123");
-const admin = () => api.login("admin@techzone.vn", "Techzone123");
-const shipping = { name: "Khách hàng demo", phone: "0901234567", address: "123 Nguyễn Văn Linh, Quận 7, TP HCM", note: "", coupon: "" };
+import assert from "node:assert/strict"
 
-test("TechZone shared mock service", async (suite) => {
-  await suite.test("guest cannot checkout or access admin operations", async () => {
-    await assert.rejects(api.checkout(shipping), /đăng nhập/);
-    await assert.rejects(api.shipping(0, 0), /đăng nhập/);
-  });
-  await suite.test("invalid login is rejected without creating a session", async () => {
-    await assert.rejects(api.login("member@techzone.vn", "wrong"), /không chính xác/);
-    assert.equal(api.user(), undefined);
-  });
-  await suite.test("guest cart is merged on login", async () => {
-    await api.addToCart("mouse", 2);
-    await member();
-    assert.equal(api.cart()[0].quantity, 2);
-    assert.equal(api.snapshot().carts.guest.length, 0);
-    assert.notEqual(api.user().passwordHash, "Techzone123");
-  });
-  await suite.test("shipping threshold applies after discount; discounts are capped", async () => {
-    api.setQuantity("mouse", 0);
-    await api.addToCart("keyboard");
-    assert.equal(api.quote("TECHZONE5").shipping, 0);
-    const thresholdCase = structuredClone(api.snapshot());
-    thresholdCase.products.find((p) => p.id === "keyboard").price = 2100000;
-    assert.equal(api.quote("TECHZONE5", thresholdCase).shipping, 30000);
-    api.setQuantity("keyboard", 0);
-    await api.addToCart("case");
-    const product = api.snapshot().products.find((p) => p.id === "case");
-    assert.equal(api.quote().shipping, 30000);
-    assert.equal(api.quote("TECHZONE5").discount, Math.round(product.price * .05));
-    api.setQuantity("case", 0);
-    await api.addToCart("pc-gaming");
-    assert.equal(api.quote("TECHZONE5").discount, 500000);
-    api.setQuantity("pc-gaming", 0);
-  });
-  let firstOrder;
-  let stock;
-  await suite.test("checkout decrements stock and clears cart atomically", async () => {
-    stock = api.snapshot().products.find((p) => p.id === "mouse").stock;
-    await api.addToCart("mouse", 2);
-    firstOrder = await api.checkout(shipping);
-    assert.equal(api.snapshot().products.find((p) => p.id === "mouse").stock, stock - 2);
-    assert.equal(api.cart().length, 0);
-    const order = api.snapshot().orders.find((o) => o.id === firstOrder);
-    assert.equal(order.total, 2 * 890000 + 30000);
-    assert.equal(order.status, "pending");
-    await assert.rejects(api.checkout(shipping), /trống/);
-  });
-  await suite.test("member cancellation restores stock exactly once", async () => {
-    await api.orderStatus(firstOrder, "cancelled");
-    assert.equal(api.snapshot().products.find((p) => p.id === "mouse").stock, stock);
-    await assert.rejects(api.orderStatus(firstOrder, "cancelled"), /kết thúc/);
-    assert.equal(api.snapshot().products.find((p) => p.id === "mouse").stock, stock);
-  });
-  await suite.test("member cannot cancel confirmed order; admin can cancel before shipping", async () => {
-    await api.addToCart("mouse");
-    const id = await api.checkout(shipping);
-    await admin();
-    await api.orderStatus(id, "confirmed");
-    await member();
-    await assert.rejects(api.orderStatus(id, "cancelled"), /không còn/);
-    await admin();
-    await api.orderStatus(id, "cancelled");
-    assert.equal(api.snapshot().products.find((p) => p.id === "mouse").stock, stock);
-  });
-  await suite.test("admin cannot cancel after shipping or skip order states", async () => {
-    await member();
-    await api.addToCart("mouse");
-    const id = await api.checkout(shipping);
-    await admin();
-    await assert.rejects(api.orderStatus(id, "delivered"), /không hợp lệ/);
-    await api.orderStatus(id, "confirmed");
-    await api.orderStatus(id, "shipping");
-    await assert.rejects(api.orderStatus(id, "cancelled"), /không còn/);
-    await api.orderStatus(id, "delivered");
-    await assert.rejects(api.orderStatus(id, "confirmed"), /kết thúc/);
-  });
-  await suite.test("stock validation rejects over-ordering without changing cart", async () => {
-    await member();
-    const before = structuredClone(api.cart());
-    await assert.rejects(api.addToCart("cpu-intel", 999), /tồn kho/);
-    assert.deepEqual(api.cart(), before);
-  });
-  await suite.test("checkout rollback retains cart when stock changes", async () => {
-    await member();
-    await api.addToCart("cpu-intel", 2);
-    await admin();
-    const p = api.snapshot().products.find((p) => p.id === "cpu-intel");
-    await api.saveProduct({ ...p, stock: 1 });
-    await member();
-    await assert.rejects(api.checkout(shipping), /không đủ tồn kho/);
-    assert.equal(api.cart()[0].quantity, 2);
-    assert.equal(api.snapshot().products.find((p) => p.id === "cpu-intel").stock, 1);
-    api.setQuantity("cpu-intel", 0);
-  });
-  await suite.test("comments require moderation and contacts enter the inbox", async () => {
-    await api.comment("news-1", "Nội dung bình luận kiểm thử");
-    const comment = api.snapshot().content.comments[0];
-    assert.equal(comment.status, "pending");
-    await assert.rejects(api.saveContent("comments", { ...comment, status: "published" }), /không có quyền/);
-    await api.contact("Khách demo", "demo@example.com", "Tôi cần tư vấn cấu hình PC.");
-    assert.equal(api.snapshot().content.contacts[0].status, "new");
-    await admin();
-    await api.saveContent("comments", { ...comment, status: "published" });
-    assert.equal(api.snapshot().content.comments[0].status, "published");
-  });
-  await suite.test("all nine approved CMS groups support create, edit and delete", async () => {
-    assert.equal(Object.keys(cmsGroups).length, 9);
-    for (const group of Object.keys(cmsGroups)) {
-      await api.saveContent(group, { id: "", title: "Kiểm thử CMS", body: "Nội dung kiểm thử", extra: group === "pricing" ? "100000" : "", image: "", status: "published", createdAt: "" });
-      const created = api.snapshot().content[group][0];
-      await api.saveContent(group, { ...created, title: "Đã chỉnh sửa" });
-      assert.equal(api.snapshot().content[group][0].title, "Đã chỉnh sửa");
-      await api.deleteContent(group, created.id);
-      assert.equal(api.snapshot().content[group].some((c) => c.id === created.id), false);
+import { readFile } from "node:fs/promises"
+
+import { createRequire } from "node:module"
+
+const require = createRequire(new URL("../package.json", import.meta.url))
+
+const ts = require("typescript")
+
+const url = (source) =>
+  `data:text/javascript;base64,${Buffer.from(source).toString("base64")}`
+
+const compile = async (path) =>
+  ts.transpileModule(await readFile(new URL(path, import.meta.url), "utf8"), {
+    compilerOptions: {
+      module: ts.ModuleKind.ESNext,
+      target: ts.ScriptTarget.ES2022,
+    },
+  }).outputText
+
+const dataUrl = url(await compile("../src/data.ts"))
+
+const { createEmptyState } = await import(dataUrl)
+
+const serviceSource = (await compile("../src/service.ts")).replace(
+  /from ["']\.\/data["']/g,
+  `from "${dataUrl}"`,
+)
+
+let sequence = 0
+
+async function fresh() {
+  return (await import(url(serviceSource + `\n// instance ${sequence++}`))).api
+}
+
+const response = (data, status = 200, message = "") => ({
+  ok: status < 400,
+  status,
+  json: async () => ({ success: status < 400, data, message }),
+})
+
+function state() {
+  return {
+    ...createEmptyState(),
+    csrfToken: "csrf-one",
+    products: [
+      {
+        id: "42",
+        name: "Database product",
+        brand: "Brand",
+        category: "cpu",
+        price: "100000.00",
+        oldPrice: "120000.00",
+        stock: 5,
+        image: "/assets/images/cpu-intel.webp",
+        specs: [],
+        featured: true,
+        status: "active",
+      },
+    ],
+
+    shipping: { fee: "30000.00", freeFrom: "2000000.00" },
+    coupons: [
+      { code: "FROM-DATABASE", basisPoints: 500, maxDiscount: "500000.00" },
+    ],
+    carts: { guest: [] },
+  }
+}
+
+test("starts empty and reads the server without consulting browser storage", async () => {
+  const original = globalThis.fetch
+
+  const descriptor = Object.getOwnPropertyDescriptor(globalThis, "localStorage")
+
+  Object.defineProperty(globalThis, "localStorage", {
+    configurable: true,
+    get() {
+      throw new Error("Browser storage must not be accessed")
+    },
+  })
+
+  try {
+    const calls = []
+
+    globalThis.fetch = async (path, options) => {
+      calls.push({ path, options })
+      return response(state())
     }
-  });
-  await suite.test("configurable shipping changes the quote immediately", async () => {
-    await api.shipping(45000, 3000000);
-    await member();
-    await api.addToCart("keyboard");
-    assert.equal(api.quote().shipping, 45000);
-    api.setQuantity("keyboard", 0);
-    await admin();
-    await api.shipping(30000, 2000000);
-  });
-  await suite.test("registration, unique email and order ownership are enforced", async () => {
-    api.logout();
-    await api.register("Thành viên mới", "new@example.com", "DemoPassword123");
-    assert.equal(api.user().role, "MEMBER");
-    assert.equal(api.user().email, "new@example.com");
-    await assert.rejects(api.orderStatus(firstOrder, "cancelled"), /Không tìm thấy/);
-    await assert.rejects(api.register("Trùng email", "new@example.com", "DemoPassword123"), /đã được đăng ký/);
-  });
-  await suite.test("persistent storage contains all saved changes", () => {
-    const saved = JSON.parse(store.get("techzone.database.v1"));
-    assert.equal(saved.orders.length, 3);
-    assert.equal(saved.users.length, 3);
-    assert.equal(saved.content.contacts.length, 1);
-  });
-});
+
+    const api = await fresh()
+
+    assert.equal(api.snapshot().ready, false)
+
+    assert.deepEqual(api.snapshot().products, [])
+
+    await api.refresh()
+
+    assert.equal(api.snapshot().products[0].id, "42")
+
+    assert.equal(api.snapshot().products[0].price, 100000)
+
+    assert.equal(api.snapshot().shipping.fee, 30000)
+
+    assert.equal(calls[0].path, "/api/store")
+
+    assert.equal(calls[0].options.credentials, "same-origin")
+  } finally {
+    globalThis.fetch = original
+
+    if (descriptor)
+      Object.defineProperty(globalThis, "localStorage", descriptor)
+    else delete globalThis.localStorage
+  }
+})
+
+test("a failed connection remains an explicit error and never creates sample data", async () => {
+  const original = globalThis.fetch
+
+  try {
+    globalThis.fetch = async () => {
+      throw new TypeError("offline")
+    }
+
+    const api = await fresh()
+
+    await assert.rejects(api.refresh(), /Không thể kết nối/)
+
+    assert.equal(api.snapshot().ready, false)
+
+    assert.deepEqual(api.snapshot().products, [])
+
+    assert.ok(api.snapshot().error)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test("writes include CSRF and publish only the refreshed server state", async () => {
+  const original = globalThis.fetch
+
+  try {
+    const wire = state()
+
+    let mutation
+
+    globalThis.fetch = async (path, options) => {
+      if (options.method === "POST") {
+        mutation = { path, options }
+
+        wire.carts.guest = [{ productId: "42", quantity: 2 }]
+
+        return response({ result: null, csrfToken: wire.csrfToken })
+      }
+
+      return response(structuredClone(wire))
+    }
+
+    const api = await fresh()
+
+    await api.refresh()
+
+    await api.addToCart("42", 2)
+
+    assert.equal(mutation.path, "/api/store/cart-add")
+
+    assert.equal(mutation.options.headers["X-CSRF-Token"], "csrf-one")
+
+    assert.deepEqual(JSON.parse(mutation.options.body), {
+      productId: "42",
+      quantity: 2,
+    })
+
+    assert.equal(api.cart()[0].quantity, 2)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test("a rejected write does not mutate cached products", async () => {
+  const original = globalThis.fetch
+
+  try {
+    globalThis.fetch = async (_path, options) =>
+      options.method === "POST"
+        ? response(null, 403, "Không có quyền")
+        : response(state())
+
+    const api = await fresh()
+
+    await api.refresh()
+
+    const before = api.snapshot()
+
+    await assert.rejects(api.deleteProduct("42"), /Không có quyền/)
+
+    assert.strictEqual(api.snapshot(), before)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test("quotes use database coupon settings instead of a built-in promotion", async () => {
+  const original = globalThis.fetch
+
+  try {
+    const wire = state()
+    wire.carts.guest = [{ productId: "42", quantity: 2 }]
+
+    globalThis.fetch = async () => response(wire)
+
+    const api = await fresh()
+
+    await api.refresh()
+
+    assert.equal(api.quote("FROM-DATABASE").discount, 10000)
+
+    assert.equal(api.quote("TECHZONE5").discount, 0)
+
+    assert.equal(api.quote("FROM-DATABASE").total, 220000)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test("list requests preserve server pagination and normalize decimal prices", async () => {
+  const original = globalThis.fetch
+
+  try {
+    let requested
+
+    globalThis.fetch = async (path) => {
+      requested = path
+      return response({
+        items: state().products,
+        pagination: { page: 2, perPage: 8, total: 25, totalPages: 4 },
+      })
+    }
+
+    const api = await fresh()
+
+    const result = await api.list("products", {
+      q: "intel & amd",
+      page: 2,
+      perPage: 8,
+    })
+
+    assert.ok(requested.includes("q=intel+%26+amd"))
+
+    assert.equal(result.pagination.total, 25)
+
+    assert.equal(result.pagination.page, 2)
+
+    assert.equal(result.items[0].price, 100000)
+  } finally {
+    globalThis.fetch = original
+  }
+})
+
+test("an older refresh cannot restore private data after logout", async () => {
+  const original = globalThis.fetch
+
+  try {
+    const signedIn = {
+      ...state(),
+      session: "7",
+      users: [{ id: "7", name: "Member", role: "MEMBER", active: true }],
+    }
+
+    let release
+
+    let reads = 0
+
+    globalThis.fetch = async (_path, options) => {
+      if (options.method === "POST")
+        return response({ result: null, csrfToken: "signed-out-token" })
+
+      reads += 1
+
+      if (reads === 2)
+        return new Promise((resolve) => {
+          release = () => resolve(response(signedIn))
+        })
+
+      return response(
+        reads === 1 ? signedIn : { ...state(), csrfToken: "signed-out-token" },
+      )
+    }
+
+    const api = await fresh()
+
+    await api.refresh()
+
+    const older = api.refresh()
+
+    await api.logout()
+
+    release()
+
+    await older
+
+    assert.equal(api.snapshot().session, null)
+
+    assert.deepEqual(api.snapshot().users, [])
+
+    assert.equal(api.snapshot().csrfToken, "signed-out-token")
+  } finally {
+    globalThis.fetch = original
+  }
+})

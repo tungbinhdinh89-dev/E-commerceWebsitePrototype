@@ -71,6 +71,8 @@ Nếu tài liệu không thống nhất, **dừng thực hiện phần xung đ�
 
 ---
 
+**DB-03 — tích hợp dữ liệu UI hiện có (22/10/2026, [MR] yêu cầu trực tiếp của người dùng):** thay mock data frontend bằng PHP/MySQL. Cho phép React hiện có gọi JSON cùng origin của monolith PHP trong giai đoạn chuyển tiếp; Node chỉ build/dev proxy, nghiệp vụ vẫn PHP MVC/PDO theo boundary bên dưới. Không dùng localStorage làm database hoặc sinh dữ liệu giả khi mất kết nối. Catalog PHP Views vẫn duy trì; PHP Views/TailAdmin là mục tiêu nghiệm thu cuối cùng. Owner triển khai: Codex trong workspace hiện tại, các module sở hữu bảng theo §4. Phạm vi gồm hành vi UI đã có: favorites (User), coupon (Sales), newsletter (Contact), media (Site), không thêm tính năng P2 mới. Nghiệm thu: load/ghi/reload dữ liệu qua MySQL, auth/role/ownership/CSRF tại server, SQL pagination, upload nội bộ, checkout/cancel transaction và test trên DB riêng. Hủy đơn vẫn chỉ Admin theo BR-08.
+
 ## 3. Phạm vi hệ thống và giới hạn nghiệp vụ
 
 ### 3.1. MVP — MUST implement (P0)
@@ -109,11 +111,11 @@ Nếu tài liệu không thống nhất, **dừng thực hiện phần xung đ�
 
 | Context | Modules / owner | Phạm vi được phép quản lý | Dữ liệu sở hữu |
 |---|---|---|---|
-| **Identity & Access** | `Auth`, `User` | Đăng ký/đăng nhập, session, quyền, hồ sơ, mật khẩu, avatar, trạng thái user | `users` |
-| **Company Content** | `Site` | Home, About, thông tin doanh nghiệp, banner/logo, dịch vụ và bảng giá | `pages`, `site_settings`, `services` |
-| **Customer Communication** | `Contact`, `Faq` | Form liên hệ, xử lý liên hệ, FAQ | `contacts`, `faqs` |
+| **Identity & Access** | `Auth`, `User` | Đăng ký/đăng nhập, session, quyền, hồ sơ, mật khẩu, avatar, trạng thái user; favorites theo DB-03 | `users`, `user_favorites`, `auth_attempts` |
+| **Company Content** | `Site` | Home, About, thông tin doanh nghiệp, banner/logo, dịch vụ, bảng giá, media | `pages`, `site_settings`, `services`, `site_media` |
+| **Customer Communication** | `Contact`, `Faq` | Form liên hệ, xử lý liên hệ, FAQ, email nhận tin | `contacts`, `faqs`, `newsletter_subscribers` |
 | **Product Catalog** | `Product` | Danh mục, sản phẩm, ảnh, giá niêm yết, tồn kho | `categories`, `products`, `product_images` |
-| **Sales** | `Cart`, `Order` | Giỏ Guest/Member, checkout COD, đơn hàng, trạng thái, snapshot giá/tên | `carts`, `cart_items`, `orders`, `order_items` |
+| **Sales** | `Cart`, `Order` | Giỏ Guest/Member, checkout COD, đơn hàng, trạng thái, snapshot giá/tên, coupon | `carts`, `cart_items`, `orders`, `order_items`, `coupons` |
 | **Editorial** | `Article`, `Comment` | Tin tức, SEO bài viết, bình luận và kiểm duyệt | `articles`, `comments` |
 
 **Không tạo `Admin` thành domain context riêng.** Admin là **giao diện và tập use case với quyền quản trị** trên các context trên. `Core`, `Middleware`, `Support`, `resources/views/layouts` là **technical shared infrastructure**, không phải một nghiệp vụ/bounded context.
@@ -190,12 +192,12 @@ Do #1 và #2 cùng làm trong `Site` / `Contact` / `Faq`, **phân quyền sở h
 
 ## 6. Source skeleton và convention
 
-Repo chia theo phạm vi: UI, asset và PHP Views nằm trong `frontend/`; mã xử lý PHP/MySQL nằm trong `backend/`; tài liệu, rules, skills và cấu hình AI giữ tại root. `frontend/src/` là prototype React hiện có để xem thử UI bằng `npm run dev`, không phải kiến trúc runtime của bản PHP hoàn chỉnh. Baseline DB-01 đã có entities, migration, front controller và catalog PHP Views; xem `backend/README.md` và `backend/database/README.md` cho trạng thái, cấu hình và phần chưa triển khai.
+Repo chia theo phạm vi: UI, asset và PHP Views trong `frontend/`; xử lý PHP/MySQL trong `backend/`; tài liệu, rules, skills và cấu hình AI ở root. `frontend/src/` là UI React chuyển tiếp dùng PHP/MySQL theo DB-03. Xem `backend/README.md` và `backend/database/README.md` cho API, schema, cấu hình và phần chưa nghiệm thu của bản PHP hoàn chỉnh.
 
 ```text
 computer-store/
 ├── frontend/
-│   ├── src/                    # UI prototype React, dữ liệu mô phỏng
+│   ├── src/                    # UI React chuyển tiếp, Fetch tới PHP/MySQL (DB-03)
 │   ├── public/                 # Static assets của UI prototype
 │   ├── resources/views/        # PHP presentation, dành cho bản hoàn chỉnh
 │   │   ├── layouts/            # public.php, member.php, admin.php sẽ triển khai

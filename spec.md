@@ -321,12 +321,12 @@ Laptop; PC lắp ráp; CPU; Mainboard; RAM; GPU; SSD/HDD; PSU; Case; màn hình;
 
 ### 8.2. Skeleton dự án
 
-Theo cách tổ chức repo, phần trình bày nằm trong `frontend/`, xử lý PHP/MySQL trong `backend/`, tài liệu và cấu hình AI/skills ở root. UI React hiện tại là prototype để xem thử; bản runtime hoàn chỉnh vẫn là PHP MVC server-rendered theo mục 8.1. Baseline DB-01 đã có entities, migrations và catalog PHP đầu tiên; các flow còn lại cần triển khai/kiểm thử theo tài liệu backend.
+Theo cách tổ chức repo, phần trình bày trong `frontend/`, xử lý PHP/MySQL trong `backend/`, tài liệu và cấu hình AI/skills ở root. Theo DB-03, React hiện tại lấy dữ liệu thật từ PHP/MySQL trong giai đoạn chuyển tiếp. PHP MVC server-rendered/TailAdmin vẫn là mục tiêu hoàn chỉnh theo mục 8.1; trạng thái triển khai và giới hạn ghi tại backend README.
 
 ```text
 computer-store/
 ├── frontend/
-│   ├── src/                  # UI prototype React, mock localStorage
+│   ├── src/                  # React UI chuyển tiếp, Fetch dữ liệu PHP/MySQL
 │   ├── public/               # Ảnh và static assets của prototype
 │   ├── resources/views/      # PHP Views cho bản hoàn chỉnh
 │   │   ├── layouts/          # public, member, admin
@@ -425,7 +425,9 @@ Các thao tác sửa/xóa sử dụng phương thức POST có CSRF token hoặc
 
 > Đây là **logical schema**, chưa phải SQL DDL cuối cùng. Khi sang giai đoạn thiết kế database phải bổ sung đầy đủ kiểu dữ liệu, NULL/NOT NULL, default, unique, foreign keys, index và quy tắc ON DELETE.
 
-**Baseline triển khai DB-01:** SQL DDL ban đầu tại `backend/database/migrations/` (001–006); [schema vật lý và ERD](backend/database/README.md) ghi chi tiết entity, trạng thái, constraint, FK và invariant cần service/transaction. Danh mục PHP đầu tiên phục vụ FR-PRO-01/02/03. Các phần còn lại vẫn cần triển khai; DB-01 chưa đồng nghĩa toàn bộ flow PHP/MySQL đã được nghiệm thu.
+**Baseline triển khai DB-01:** SQL DDL ban đầu tại `backend/database/migrations/` (001–006); migration 007 bổ sung persistence theo DB-03. [Schema vật lý và ERD](backend/database/README.md) ghi ownership, constraint và transaction. Catalog PHP phục vụ FR-PRO-01/02/03; JSON PHP nối các flow React hiện có với MySQL. Điều này chưa đồng nghĩa toàn bộ P0 đã nghiệm thu.
+
+**DB-03 — thay dữ liệu mô phỏng bằng PHP/MySQL (22/10/2026, [MR]):** yêu cầu trực tiếp của người dùng, owner triển khai Codex. Giữ React hiện có làm UI chuyển tiếp, dùng JSON cùng origin trong một PHP modular monolith; không localStorage/mock fallback. Module User sở hữu favorites; Sales sở hữu coupon; Contact sở hữu newsletter; Site sở hữu media — chỉ duy trì hành vi đã có ở UI. Nghiệm thu: ghi và tải lại dữ liệu từ MySQL; server kiểm session/RBAC/CSRF/ownership, phân trang SQL, upload ảnh nội bộ, tính tiền và khóa tồn kho trong checkout/cancel transaction, kiểm thử DB riêng gồm cạnh tranh tồn kho và hoàn kho một lần. Hủy đơn chỉ Admin từ pending/confirmed theo BR-08. Catalog SSR và mục tiêu PHP Views/TailAdmin vẫn giữ; các phần P0 chưa hoàn tất được ghi ở backend README.
 
 **DB-02 — kết nối NAS (22/10/2026):** theo yêu cầu người dùng, triển khai database phát triển `computer_store` và DB kiểm thử riêng `computer_store_test` trên container `mysql_nas`, host `192.168.1.200`, mapped port `32771`. Server hiện tại là MySQL 26.7.0; cho phép 26.7.x cho hạ tầng này, ngoài baseline 8.x, không thay đổi MySQL thành hệ quản trị khác. Mã nguồn không chứa credentials thật; PHP kết nối qua PDO, chỉ migration/test trong hai database của dự án.
 

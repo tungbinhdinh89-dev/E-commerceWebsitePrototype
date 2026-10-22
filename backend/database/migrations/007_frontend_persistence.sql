@@ -1,0 +1,63 @@
+ALTER TABLE categories ADD short_name VARCHAR(150) NOT NULL DEFAULT '', ADD detail VARCHAR(255) NOT NULL DEFAULT '';
+ALTER TABLE products ADD old_price DECIMAL(15,2) NOT NULL DEFAULT 0.00, ADD CONSTRAINT chk_products_old_price CHECK (old_price >= 0);
+ALTER TABLE orders ADD subtotal DECIMAL(15,2) NOT NULL DEFAULT 0.00, ADD discount DECIMAL(15,2) NOT NULL DEFAULT 0.00, ADD shipping_fee DECIMAL(15,2) NOT NULL DEFAULT 0.00, ADD coupon_code VARCHAR(40) NULL, ADD CONSTRAINT chk_orders_amounts CHECK (subtotal >= 0 AND discount >= 0 AND shipping_fee >= 0);
+ALTER TABLE order_items ADD image_path VARCHAR(255) NULL;
+ALTER TABLE articles ADD section VARCHAR(150) NOT NULL DEFAULT '';
+ALTER TABLE pages ADD extra TEXT NULL, ADD image_path VARCHAR(255) NULL;
+ALTER TABLE site_settings ADD title VARCHAR(150) NOT NULL DEFAULT '', ADD status ENUM('published', 'hidden') NOT NULL DEFAULT 'published';
+ALTER TABLE services ADD price_label VARCHAR(150) NOT NULL DEFAULT '';
+
+CREATE TABLE data_seeds (
+    name VARCHAR(100) PRIMARY KEY,
+    applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE user_favorites (
+    user_id BIGINT UNSIGNED NOT NULL,
+    product_id BIGINT UNSIGNED NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (user_id, product_id),
+    CONSTRAINT fk_favorites_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_favorites_product FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE newsletter_subscribers (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    email VARCHAR(254) NOT NULL,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_newsletter_email (email)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE coupons (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    code VARCHAR(40) NOT NULL,
+    basis_points SMALLINT UNSIGNED NOT NULL,
+    max_discount DECIMAL(15,2) NOT NULL,
+    active BOOLEAN NOT NULL DEFAULT TRUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_coupons_code (code),
+    CONSTRAINT chk_coupons_rate CHECK (basis_points BETWEEN 1 AND 10000),
+    CONSTRAINT chk_coupons_discount CHECK (max_discount >= 0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE site_media (
+    id BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    uploaded_by BIGINT UNSIGNED NOT NULL,
+    title VARCHAR(200) NOT NULL,
+    description TEXT NOT NULL,
+    file_path VARCHAR(255) NOT NULL,
+    mime_type VARCHAR(80) NOT NULL DEFAULT '',
+    size_bytes BIGINT UNSIGNED NOT NULL DEFAULT 0,
+    status ENUM('published', 'hidden') NOT NULL DEFAULT 'published',
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY uq_media_path (file_path),
+    CONSTRAINT fk_media_user FOREIGN KEY (uploaded_by) REFERENCES users(id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
+
+CREATE TABLE auth_attempts (
+    scope CHAR(64) PRIMARY KEY,
+    attempts INT UNSIGNED NOT NULL DEFAULT 1,
+    window_started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
