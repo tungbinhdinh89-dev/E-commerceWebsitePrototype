@@ -1,0 +1,40 @@
+\section*{Tóm tắt}
+\addcontentsline{toc}{section}{Tóm tắt}
+TechZone là đề tài xây dựng website giới thiệu doanh nghiệp và kinh doanh máy tính, linh kiện, phụ kiện. Hệ thống phục vụ ba nhóm người dùng: khách truy cập, thành viên và quản trị viên. Báo cáo trình bày bài toán, yêu cầu chức năng và phi chức năng, các ca sử dụng, kiến trúc PHP MVC, mô hình dữ liệu MySQL, luồng đặt hàng COD, hướng dẫn cài đặt và kế hoạch kiểm thử.
+
+Nội dung được xây dựng từ SRS phiên bản 2.0 ngày 07/11/2026 và đối chiếu với mã nguồn dự án Computer Store. Bản làm việc hiện có giao diện React gọi PHP JSON, truy cập MySQL bằng PDO; catalog PHP server-rendered vẫn được duy trì. Quyết định chuyển tiếp DB-03 cho phép sử dụng giao diện này trong giai đoạn tích hợp. Yêu cầu PHP Views/TailAdmin và các chức năng còn thiếu được ghi riêng trong phần đánh giá, không được xem là đã nghiệm thu.\cite{srs,repository}
+
+\subsection*{Phạm vi chứng cứ của báo cáo}
+Báo cáo phân biệt ba mức: \textbf{yêu cầu theo SRS}, \textbf{có hiện thực trong mã nguồn}, và \textbf{đã được kiểm chứng bằng thực thi}. Việc biên soạn lần này chỉ đọc tài liệu/mã nguồn và biên dịch báo cáo; không chạy các giao dịch ứng dụng, không kết nối database để nghiệm thu, không tạo tài khoản/đơn hàng và không ghi nhận kết quả kiểm thử giả định là Pass. Các bảng kiểm thử có kết quả mong đợi và trạng thái chờ chạy.
+
+\subsection*{Thông tin cần hoàn thiện trước khi nộp}
+Email liên hệ nhóm, mã lớp/nhóm và danh sách thành viên phải được bổ sung trong \code{metadata.tex} và phần phân công. Các ảnh chụp giao diện, kết quả trình duyệt/W3C và kết quả kiểm thử cần được bổ sung sau khi chạy trên phiên bản chốt. Thông tin sinh viên \ReportAuthor, MSSV \ReportStudentID\ được giữ từ template hiện có; cần kiểm tra lại khi sử dụng cho nhóm.
+
+\subsection*{Quy ước nguồn yêu cầu}
+\begin{description}
+\item[BT] Nội dung được SRS dẫn lại là yêu cầu học phần. Tệp assignment gốc không có trong bộ tài liệu đã kiểm tra; khi có bản gốc cần đối chiếu trước khi xác nhận tuân thủ cuối cùng.
+\item[TK] Lựa chọn thiết kế của dự án, chẳng hạn COD, cách tính phí giao hàng và việc giữ snapshot đơn hàng.
+\item[MR] Phần mở rộng hoặc quyết định chuyển tiếp, chỉ áp dụng khi không làm thiếu chức năng bắt buộc.
+\end{description}
+\clearpage
+\section*{Danh mục từ viết tắt}
+\addcontentsline{toc}{section}{Danh mục từ viết tắt}
+\begin{longtable}{@{}P{2.4cm}P{12.7cm}@{}}
+\toprule Ký hiệu & Diễn giải \\ \midrule\endhead
+SRS & Software Requirements Specification — đặc tả yêu cầu phần mềm.\\
+FR / NFR & Functional / Non-functional Requirement — yêu cầu chức năng / phi chức năng.\\
+BR / UC / TC & Business Rule / Use Case / Test Case — quy tắc nghiệp vụ / ca sử dụng / ca kiểm thử.\\
+MVC & Model–View–Controller — phân tách dữ liệu, trình bày và điều phối yêu cầu.\\
+PDO & PHP Data Objects — giao diện truy cập database được dự án sử dụng.\\
+CRUD & Create, Read, Update, Delete — tạo, đọc, cập nhật, xóa.\\
+RBAC & Role-Based Access Control — phân quyền theo vai trò.\\
+CSRF / XSS & Giả mạo yêu cầu giữa các website / chèn nội dung có thể thực thi trong trình duyệt.\\
+COD & Cash on Delivery — thanh toán khi nhận hàng.\\
+ERD & Entity–Relationship Diagram — sơ đồ thực thể và quan hệ.\\
+PK / FK / UQ & Khóa chính / khóa ngoại / ràng buộc duy nhất.\\
+SSR / SPA & Kết xuất HTML phía server / ứng dụng giao diện một trang.\\
+SEO & Search Engine Optimization — tối ưu khả năng tiếp cận nội dung qua công cụ tìm kiếm.\\
+P0 / P1 / P2 & Mức ưu tiên: bắt buộc trước nghiệm thu / cải tiến / mở rộng tùy chọn.\\
+\bottomrule
+\end{longtable}
+\clearpage

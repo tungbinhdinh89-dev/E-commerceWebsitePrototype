@@ -1,0 +1,60 @@
+\section{Kiểm thử và đánh giá chất lượng}
+\label{sec:testing}
+\subsection{Chiến lược kiểm thử}
+Kế hoạch ưu tiên luồng nghiệp vụ đầu cuối trên PHP/MySQL thật: xác thực, CRUD, upload, giỏ, COD, đơn cá nhân và quản trị trạng thái. Mỗi module cần ca thành công, ca đầu vào sai và ca trái quyền khi có dữ liệu riêng. Các bộ test trong repo hỗ trợ hồi quy; việc bấm được giao diện chưa đủ chứng minh transaction hoặc kiểm soát truy cập.
+
+\begin{table}[H]\centering
+\caption{Các tầng kiểm thử của dự án}\label{tab:test-levels}
+\begin{tabularx}{\linewidth}{@{}P{2.5cm}YY@{}}\toprule
+Tầng & Nội dung & Bằng chứng cần lưu\\\midrule
+Unit & Money, trạng thái đơn, DTO, router, environment. & Tên test, command, thời gian và log nguyên bản.\\
+Database & FK/UQ/CHECK, seed, snapshot, rollback. & DB test riêng; trước/sau và kết quả test.\\
+HTTP integration & Cookie/session, CSRF, quyền, upload, CRUD, checkout/cancel. & Request/response đã che dữ liệu nhạy cảm; log test.\\
+UI functional & Các UC, validation, empty/error/loading, giữ dữ liệu sau reload. & Checklist, ảnh chụp và Actual theo từng ca.\\
+Concurrency & Hai checkout tranh stock=1; hai hủy đồng thời. & Đúng số đơn/kho; không bán âm/hoàn lặp.\\
+Phi chức năng & Responsive, browser, W3C, SEO, thời gian phản hồi. & Cấu hình đo, ảnh và báo cáo validator.\\
+\bottomrule\end{tabularx}
+\end{table}
+
+\subsection{Môi trường và dữ liệu kiểm thử}
+Database kiểm thử có tên kết thúc bằng \code{_test}, mặc định \code{computer_store_test}; không dùng database ứng dụng cho fixtures. HTTP runner khởi PHP ở cổng tạm, dùng prefix riêng để dọn dữ liệu sau test. Các tài khoản phục vụ kiểm thử phải được tạo trong môi trường riêng với mật khẩu không dùng ở nơi khác.
+
+Cần chuẩn bị ít nhất hai Member để kiểm ownership, một Admin; sản phẩm active, hidden và hết kho; giỏ rỗng và đủ hàng; đơn ở các trạng thái; bài draft/published và bình luận pending/approved. Để kiểm phân trang theo TC-30, dùng 30 sản phẩm và 20 bài viết trong DB test; đây là dữ liệu cần chuẩn bị, không phải số liệu đã seed trong lần biên soạn.
+
+\subsection{Bảng ca kiểm thử theo SRS}
+\textbf{Kết quả thực tế của toàn bộ TC-01–TC-31 trong lần lập báo cáo: chưa chạy.} Bảng dưới là kịch bản và expected result; không phải biên bản Pass. TC-06, TC-07 và TC-31 phụ thuộc những phần còn thiếu nên cần hoàn tất hiện thực trước khi nghiệm thu đầy đủ.
+\input{sections/test-table}
+
+\subsection{Commands hiện có và cách thu bằng chứng}
+Tại root dự án, các script sau đã có trong package manifest:
+\begin{lstlisting}[caption={Các lệnh kiểm tra ứng dụng; chưa thực thi trong lần soạn báo cáo}]
+npm.cmd run build
+npm.cmd run typecheck
+npm.cmd test
+npm.cmd run backend:lint
+npm.cmd run backend:test
+npm.cmd run backend:test-db
+npm.cmd run backend:test-http
+\end{lstlisting}
+Frontend test gồm Fetch/CSRF/cache và React context. Backend unit gồm Money, state transitions, router, DTO và cấu hình. Database/HTTP test cần PHP và MySQL riêng đúng cấu hình; không đánh đồng unit Pass với checkout trên MySQL đã đạt. Chưa có lệnh riêng chứng minh W3C hoặc chạy ba trình duyệt, vì vậy các hạng mục này phải được thực hiện và lưu kết quả riêng.
+
+\subsection{Mẫu biên bản và cách đánh giá lỗi}
+\begin{table}[H]\centering
+\caption{Mẫu biên bản kiểm thử để hoàn thiện trước nộp}\label{tab:test-record}
+\begin{tabularx}{\linewidth}{@{}P{3.7cm}Y@{}}\toprule
+Trường & Nội dung cần ghi\\\midrule
+Test ID / build & TC-xx; commit hoặc mã phiên bản đang kiểm.\\
+Người kiểm / ngày & Họ tên và thời điểm chạy thật.\\
+Môi trường & PHP/MySQL, hệ điều hành, trình duyệt/viewport.\\
+Precondition / dữ liệu & User role, trạng thái fixture, input không chứa secret.\\
+Steps / Expected & Các bước và kỳ vọng từ bảng ca kiểm thử.\\
+Actual / Status & Kết quả quan sát; Pass/Fail/Blocked, không tự điền trước.\\
+Evidence / issue & Tên ảnh/log; mã issue nếu Fail; người xử lý và retest.\\
+\bottomrule\end{tabularx}
+\end{table}
+
+Lỗi mất dữ liệu, sai tổng tiền, vượt quyền hoặc trừ/hoàn kho sai cần ưu tiên trước lỗi trình bày. Khi sửa phải chạy lại ca lỗi và các luồng mua hàng/quản trị liên quan. Không dùng việc đóng issue thay cho retest có chứng cứ; nghiệm thu cuối vẫn cần người phụ trách kiểm tra.
+
+\subsection{Kết luận kiểm thử tại thời điểm viết}
+Mã nguồn có test tự động cho nhiều ràng buộc quan trọng, nhưng lần viết báo cáo này chưa chạy lại các script ứng dụng hoặc kiểm thử trình duyệt. Chưa có cơ sở công bố tỉ lệ Pass, thời gian tải trang, số lỗi W3C hoặc mức độ hoàn tất an toàn thông tin. Kết quả kiểm tra thực hiện trong công việc này là biên dịch và kiểm tra tài liệu LaTeX; kết quả đó chỉ xác nhận bộ báo cáo build được.
+\clearpage

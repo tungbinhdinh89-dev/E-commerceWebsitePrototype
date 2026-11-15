@@ -1,0 +1,41 @@
+\section{Giới thiệu đề tài}
+\label{sec:introduction}
+\subsection{Bối cảnh và lý do chọn đề tài}
+Website kinh doanh máy tính phải đồng thời giải quyết hai nhu cầu: công bố thông tin đáng tin cậy về doanh nghiệp và hỗ trợ khách hàng tìm, lựa chọn, đặt mua sản phẩm. Khi danh mục có nhiều nhóm hàng như laptop, máy tính để bàn, linh kiện và phụ kiện, việc tìm kiếm theo tên hoặc danh mục, xem thông số và nhận biết giá/tồn kho là những thao tác trọng tâm.
+
+Ở phía quản trị, dữ liệu sản phẩm, đơn hàng, bài viết và liên hệ cần được quản lý thống nhất. Nếu chỉ trình diễn giao diện bằng dữ liệu tĩnh, thay đổi sau khi tải lại trang và các ràng buộc về giá, tồn kho, quyền truy cập chưa được chứng minh. Đề tài vì vậy tập trung vào kết nối giao diện với PHP/MySQL và tổ chức nghiệp vụ đủ rõ để kiểm tra từng chức năng.
+
+\subsection{Tên đề tài và mục tiêu}
+Tên đề tài được đề xuất là \textbf{TechZone — Xây dựng website kinh doanh máy tính và linh kiện}. TechZone là tên hiển thị đã có trong giao diện và SRS, không phải tên một doanh nghiệp được xác minh. Đề tài hướng tới các mục tiêu:
+\begin{enumerate}
+\item Xây dựng đầy đủ các khu vực công khai: trang chủ, giới thiệu, sản phẩm, dịch vụ/bảng giá, FAQ, tin tức và liên hệ.
+\item Cung cấp tài khoản thành viên với xác thực, hồ sơ, giỏ hàng, đặt COD và truy xuất đơn hàng theo quyền sở hữu.
+\item Cung cấp chức năng quản trị nội dung, sản phẩm, liên hệ, người dùng và đơn hàng, có tìm kiếm và phân trang.
+\item Thực hành phân tích yêu cầu, thiết kế database, PHP OOP/MVC, kiểm tra dữ liệu và bảo mật ứng dụng web.
+\item Tạo bộ mã nguồn, migration, hướng dẫn cài đặt và kịch bản kiểm thử có thể dùng để kiểm tra trên máy khác.
+\end{enumerate}
+
+\subsection{Đối tượng sử dụng}
+Khách truy cập cần tra cứu thông tin và gửi liên hệ mà không phải tạo tài khoản. Thành viên cần tiếp tục giỏ hàng, đặt hàng và theo dõi đơn của chính mình. Quản trị viên cần xử lý dữ liệu nội bộ thông qua giao diện quản trị, nhưng mọi quyền vẫn phải được kiểm tra tại PHP server.
+
+Trong thiết kế hiện tại, Guest là trạng thái chưa xác thực, không phải một dòng user có role guest trong database. Bảng \code{users} lưu hai giá trị vai trò member/admin. Việc phân biệt actor nghiệp vụ với giá trị lưu trữ giúp tránh tạo tài khoản Guest dùng chung hoặc tin role do trình duyệt gửi lên.
+
+\subsection{Phạm vi triển khai}
+\begin{table}[H]\centering
+\caption{Phạm vi của đề tài và giới hạn MVP}\label{tab:scope}
+\begin{tabularx}{\linewidth}{@{}YY@{}}\toprule
+Trong phạm vi & Ngoài phạm vi MVP \\ \midrule
+Giới thiệu doanh nghiệp, FAQ, dịch vụ, tin tức và liên hệ. & Marketplace nhiều người bán, ERP và quản lý nhiều kho.\\
+Danh mục, tìm kiếm, phân trang, chi tiết, giá, tồn kho, upload ảnh. & Bộ dựng PC kiểm tra tương thích và quản lý bảo hành phức tạp.\\
+Giỏ Guest/Member, COD, lịch sử đơn và quản trị trạng thái. & Cổng thanh toán thật, ví điện tử và API giao vận thực.\\
+Xác thực, phân quyền, validation, kiểm thử và tài liệu. & Tuyên bố vận hành thương mại hoặc đạt chứng nhận bảo mật.\\
+\bottomrule\end{tabularx}
+\end{table}
+
+Coupon, yêu thích, media và email nhận tin đã xuất hiện trong phạm vi chuyển tiếp DB-03 của mã nguồn. Báo cáo ghi nhận các phần này như chức năng bổ sung của giao diện hiện hữu; chúng không được dùng để thay thế phần P0 còn thiếu. Đăng ký email nhận tin chỉ lưu dữ liệu, chưa có dịch vụ gửi email tự động.
+
+\subsection{Phương pháp thực hiện và tổ chức báo cáo}
+Quá trình trình bày đi từ SRS đến thiết kế và đối chiếu mã nguồn: nhận diện actor; lập FR/NFR và BR; mô tả use case; thiết kế luồng xử lý, kiến trúc và database; phân tích các service trọng tâm; xây dựng checklist kiểm thử và cài đặt. Mỗi yêu cầu giữ mã trong SRS để có thể truy ngược từ ca kiểm thử về chức năng.
+
+Các phần tiếp theo lần lượt trình bày công nghệ, yêu cầu, thiết kế, dữ liệu, hiện thực, kiểm thử, cài đặt, quản lý dự án và đánh giá. Các nhận xét về phần đã có dựa trên mã nguồn cục bộ tại ngày lập báo cáo, không thay cho việc demo trực tiếp với giảng viên.
+\clearpage

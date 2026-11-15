@@ -1,0 +1,50 @@
+\section{Tổ chức công việc và kế hoạch hoàn thiện}
+\label{sec:management}
+\subsection{Phân công theo nhóm việc học phần}
+SRS mô tả nhóm tối đa bốn sinh viên, chia bốn đầu việc và phần chung. Hiện template chỉ có thông tin \ReportAuthor\ — \ReportStudentID. Bảng sau là \textbf{mẫu phân công đề xuất cần nhóm xác nhận}, không phải bảng ghi nhận thành viên đã thực hiện hoặc phần trăm đóng góp đã được chấm.
+\begin{table}[H]\centering
+\caption{Mẫu phân công để bổ sung thông tin nhóm}\label{tab:team}
+\begin{tabularx}{\linewidth}{@{}P{1.8cm}YP{4.1cm}@{}}\toprule
+Nhóm việc & Phạm vi trách nhiệm & Người phụ trách\\\midrule
+\#1 & Home/Contact; thông tin công ty, banner và xử lý liên hệ. & [Chưa xác nhận]\\
+\#2 & About/FAQ; nội dung giới thiệu, FAQ, dịch vụ/bảng giá. & [Chưa xác nhận]\\
+\#3 & Product/Cart/Order; catalog, COD và quản trị đơn. & [Chưa xác nhận]\\
+\#4 & News/Comment; tin tức, SEO bài và moderation. & [Chưa xác nhận]\\
+Phần chung & Auth, role, profile, users, database, tích hợp, test và báo cáo. & Cả nhóm; cần ghi người thực hiện từng ticket.\\
+\bottomrule\end{tabularx}
+\end{table}
+Khi chỉ có một người thực hiện, cần đổi bảng theo phạm vi thực tế và xác nhận quy định với giảng viên; không tạo thêm tên thành viên để đủ bốn dòng. Công việc dùng chung được chia theo file/route và review để tránh sửa đồng thời một controller lớn.
+
+\subsection{Kế hoạch theo mốc tương đối}
+Ngày nộp chính thức và số giờ thực hiện chưa được cung cấp, nên kế hoạch dùng mốc tương đối và không ấn định deadline giả. Khi chốt lịch, cần đưa ngày bắt đầu/kết thúc, assignee, dependency và dung lượng thực tế vào backlog.
+{\small
+\begin{longtable}{@{}P{1.3cm}P{6.5cm}P{6.7cm}@{}}
+\caption{Các mốc hoàn thiện đề xuất}\label{tab:milestones}\\
+\toprule Mốc & Công việc & Điều kiện kết thúc\\\midrule\endfirsthead
+\toprule Mốc & Công việc & Điều kiện kết thúc\\\midrule\endhead
+M0 & Chốt SRS, thành viên, ngày nộp và hiện trạng code. & Danh sách P0/gap, người phụ trách và lịch được xác nhận.\\
+M1 & Hoàn thiện PHP Views/TailAdmin và điều hướng. & Bản nộp đáp ứng baseline; không chỉ có React prototype.\\
+M2 & Bổ sung password/reset/avatar, danh mục và FR-P10. & Luồng chính/lỗi/quyền có code và ca kiểm thử.\\
+M3 & Kiểm integration, concurrency, upload, ownership. & Không còn blocker, có log trên DB test riêng.\\
+M4 & Responsive/browser/W3C/SEO, thử cài sạch. & Evidence đủ NFR, README tái lập được.\\
+M5 & Chốt báo cáo, SQL/source, dữ liệu demo và rehearsal. & Email/phân công đúng; PDF và bộ nộp được người phụ trách kiểm.\\
+\bottomrule\end{longtable}}
+
+\subsection{Quản lý bằng Kanban và ticket}
+Luồng đề xuất là Backlog → Ready → In Progress → In Review → Done. Một ticket chỉ Ready khi có yêu cầu, scope, input, dependency, acceptance criteria và cách kiểm thử. Done đòi hỏi code được review/merge và có bằng chứng nghiệm thu tương ứng, không chỉ hoàn thành viết code.
+
+Tên ticket nên có ID ổn định, type và feature, ví dụ \code{[TZ-001] [FEATURE] [Identity] Implement password change}. Đây là ví dụ quy ước đề xuất, không phải issue GitHub đã được tạo. BUG ghi lỗi quan sát thực tế; FEATURE bổ sung yêu cầu; TEST ghi việc xác minh; DOCS dành cho tài liệu. Có thể dùng labels type/area/priority và milestone tương ứng, tránh một ticket bao hết module.
+
+Khi triển khai: nhận ticket, cập nhật main, tạo branch như \code{feat/tz-001-identity-password-change}, commit theo Conventional Commits, chạy các checks phù hợp và tạo PR. Chủ dự án review và approve trước merge. Không đánh dấu Done hoặc tự merge chỉ vì agent đã chạy xong. Project nên có các view backlog ưu tiên, bảng trạng thái, roadmap, bugs và in review; việc cấu hình remote phải thực hiện trong công việc được giao riêng.
+
+\subsection{Kịch bản demo 10–15 phút đề xuất}
+\begin{enumerate}
+\item Giới thiệu bài toán, actor và stack; nói rõ phiên bản frontend/PHP Views đang trình diễn.
+\item Admin đăng nhập, thêm sản phẩm với ảnh nội bộ và kiểm tra dữ liệu public sau reload.
+\item Guest tìm sản phẩm, thêm giỏ, đăng nhập Member và checkout COD; xem mã đơn và lịch sử.
+\item Admin chuyển trạng thái đơn; kiểm đơn cá nhân và tình huống chuyển trạng thái sai.
+\item Gửi liên hệ, sửa FAQ/tin tức, bình luận pending và duyệt công khai.
+\item Thử input không hợp lệ, Member truy cập admin và request không CSRF; đối chiếu kết quả mong đợi.
+\end{enumerate}
+Không dùng tài khoản/mật khẩu thật trong slide hoặc video. Những luồng chưa hoàn thiện cần được sửa trước demo; không chuẩn bị dữ liệu tĩnh để thay cho chức năng thiếu.
+\clearpage

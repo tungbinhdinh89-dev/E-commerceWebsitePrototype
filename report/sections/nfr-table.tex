@@ -1,0 +1,19 @@
+{\small
+\begin{longtable}{@{}P{1.8cm}P{5.1cm}P{6cm}P{1.6cm}@{}}
+\caption{Yêu cầu phi chức năng và cách kiểm chứng}\label{tab:nfr}\\
+\toprule NFR & Yêu cầu & Tiêu chí kiểm tra & TC\\\midrule\endfirsthead
+\toprule NFR & Yêu cầu & Tiêu chí kiểm tra & TC\\\midrule\endhead
+NFR-01 & Responsive tại 360, 768 và 1280 px. & Không tràn ngang; điều hướng/form sử dụng được. & TC-28\\
+NFR-02 & Chạy trên Chrome, Firefox, Edge. & Smoke test P0, ghi phiên bản và lỗi từng trình duyệt. & TC-29\\
+NFR-03 & Kiểm tra HTML/CSS bằng W3C. & Lưu kết quả; sửa lỗi nghiêm trọng trước nộp. & TC-29\\
+NFR-04 & Validation ở client và PHP server. & Bỏ qua JS vẫn từ chối dữ liệu sai; không lưu dở dang. & TC-10,15\\
+NFR-05 & Hạn chế SQL Injection bằng prepared statements. & Không nối input vào SQL; kiểm allowlist sort/filter. & TC-27\\
+NFR-06 & Ngăn XSS, escape output và kiểm soát rich text. & Payload trong comment/contact không thực thi. & TC-25\\
+NFR-07 & CSRF cho thao tác ghi, quyền kiểm tại server. & Thiếu token hoặc Member gọi admin phải bị từ chối. & TC-05,26\\
+NFR-08 & Hash mật khẩu, session và upload an toàn. & Không lộ hash; chỉ loại ảnh/kích thước được phép. & TC-03,16\\
+NFR-09 & SEO cơ bản trên các trang chính. & Kiểm HTML nhận về: title, meta, heading, alt, URL. & Rà SEO\\
+NFR-10 & Phân trang và trạng thái danh sách rỗng. & Dữ liệu vượt một trang; đúng tổng và trang rỗng. & TC-13,30\\
+NFR-11 & Mục tiêu phản hồi local nhỏ hơn 3 giây. & Đo trên cấu hình/dữ liệu xác định; chưa có số đo. & Đo local\\
+NFR-12 & Cài đặt tái lập với SQL, seed, config mẫu, README. & Máy/môi trường sạch chạy được theo hướng dẫn. & Cài sạch\\
+\bottomrule\end{longtable}
+}

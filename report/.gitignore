@@ -1,0 +1,14 @@
+/build/
+/dist/
+/logs/
+/rendered/
+/backups/
+/main.pdf
+__pycache__/
+*.aux
+*.log
+*.toc
+*.lof
+*.lot
+*.out
+*.synctex.gz

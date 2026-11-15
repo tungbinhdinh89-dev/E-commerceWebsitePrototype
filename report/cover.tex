@@ -1,0 +1,42 @@
+\begin{titlepage}
+\thispagestyle{empty}
+\setstretch{1}
+\setlength{\parskip}{0pt}
+\begin{tikzpicture}[remember picture,overlay]
+\draw[ReportBlue,line width=1.5pt]
+  ([xshift=1.2cm,yshift=-1.2cm]current page.north west)
+  rectangle ([xshift=-1.2cm,yshift=1.2cm]current page.south east);
+\end{tikzpicture}
+\begin{center}
+\vspace*{.5cm}
+{\large\bfseries ĐẠI HỌC QUỐC GIA THÀNH PHỐ HỒ CHÍ MINH\par}
+\vspace{.4cm}
+{\large\bfseries TRƯỜNG ĐẠI HỌC BÁCH KHOA\par}
+\vspace{.2cm}
+{Khoa Khoa học và Kỹ thuật Máy tính\par}
+\vspace{.65cm}
+\includegraphics[width=2.8cm]{figures/hcmut.png}\par
+\vspace{.6cm}
+{\Large\bfseries \ReportCourse\par}
+\vspace{.3cm}
+{\large \ReportType\par}
+\vspace{.65cm}
+\rule{.9\linewidth}{.4pt}\par
+\vspace{.3cm}
+{\LARGE\bfseries\color{ReportBlue}\ReportTitle\par}
+\vspace{.3cm}
+\rule{.9\linewidth}{.4pt}\par
+\vspace{.3cm}
+{\normalsize \ReportSubtitle\par}
+\vspace{.55cm}
+\begin{tabular}{@{}ll@{}}
+\textbf{Giảng viên:}&\ReportLecturer\\[6pt]
+\textbf{Sinh viên:}&\ReportAuthor\\[6pt]
+\textbf{MSSV:}&\ReportStudentID\\[6pt]
+\textbf{Lớp/nhóm:}&\ReportClass\\[6pt]
+\textbf{Email liên hệ:}&\ReportEmail
+\end{tabular}
+\vfill
+Thành phố Hồ Chí Minh, \ReportDate
+\end{center}
+\end{titlepage}

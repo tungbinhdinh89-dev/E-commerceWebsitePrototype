@@ -86,3 +86,105 @@ Integration tests chỉ dùng database riêng có đuôi `_test`, mặc định 
 ## Image credits
 
 Local product illustrations are sourced from publicly available manufacturer/retailer photography (GEARVN / Hstatic) for this educational project and may depict a representative model. Editorial photos: Agung Raharja, Back2Gaming and Olivie Zemanova via Unsplash. Replace or license imagery appropriately before commercial use.
+
+## Documentation baseline and implementation gaps
+
+Ngày đối chiếu **2026-11-07**. Đặc tả chính: [Computer_Store_SRS_Assignment.pdf](Computer_Store_SRS_Assignment.pdf), v2.0,14 trang; [report.pdf](report.pdf),40 trang là báo cáo bổ sung, không là kết quả kiểm thử mới. [make-doc-skill-plan.md](make-doc-skill-plan.md) quy định nội dung bộ Markdown. Source inspected không đồng nghĩa đã nghiệm thu.
+
+Các khoảng trống cần hoàn thiện được giữ rõ: PHP Views/TailAdmin toàn site; đổi/reset mật khẩu và avatar; quản trị danh mục/nhiều ảnh; SKU/slug/mô tả/SEO metadata; trạng thái xử lý giỏ FR-P10; subject liên hệ đang ghi hằng; FAQ ordering; QA trình duyệt/W3C/responsive/performance và cài sạch. Report còn metadata lớp/email/phân công cần user xác nhận. Không tự cho rằng app đủ P0 chỉ vì CRUD/transaction có code.
+
+## Tech stack: current and target
+
+| Thành phần | Current source / manifest | Target / giới hạn |
+| --- | --- | --- |
+| Server | PHP8.3, PDO MySQL, Composer PSR-4, MVC/Service/Repository tự viết | PHP duy nhất xử lý nghiệp vụ server, không PHP framework/ORM/CMS |
+| Frontend | React19, TypeScript5.7, Vite8, Tailwind4/Astra theo manifest | DB-03 chuyển tiếp; hoàn thiện PHP Views và TailAdmin Free; không gọi Astra là TailAdmin |
+| Database | MySQL8.x8.0.16+ hoặc NAS26.7.x theo source/DB-02; InnoDB,utf8mb4 | 21 bảng dữ liệu/hỗ trợ + schema_migrations; SQL migrations là schema chuẩn |
+| Identity | PHP Session/password_hash/RBAC/ownership/CSRF | Không JWT tự xây; password reset/session policy còn chốt |
+| Tooling | Node22.12+ dòng22, pnpm10.34.3 theo .mise.toml, npm scripts | Node chỉ build/dev proxy, không backend runtime |
+| Verification | node:test frontend, PHP unit/lint, MySQL/HTTP tests riêng _test | Không có dedicated test:e2e/load command được xác nhận |
+
+Các version dependency trên là dòng manifest/config, không claim kiểm lại package installed hoặc DB version trong task tài liệu. [Tech-stack](doc/tech-stack.md) có lý do/trade-offs; [repository-layout](doc/repository-layout.md) có entry points/ownership/output thật.
+
+## Environment and configuration checklist
+
+Chuẩn bị PHP8.3 + fileinfo/mbstring/PDO/PDO MySQL và Composer autoload; Node/pnpm theo cấu hình; database ứng dụng và database có đuôi `_test` riêng. Chỉ sao chép `backend/.env.example` khi `.env` chưa tồn tại; không ghi đè config local. Điền DB_HOST/PORT/DATABASE/TEST_DATABASE/USERNAME/PASSWORD và bootstrap Admin riêng; không đưa giá trị secret vào frontend/Git/report. Có quyền ghi uploads/session cache và kết nối DB, chưa cần mở API thanh toán/email/giao vận.
+
+Seed store không tạo demo accounts; Member đăng ký, Admin CLI từ biến môi trường. Không default password, không đọc/copy `.tools/admin-credentials.json` vào tài liệu. [Demo accounts/fixtures](doc/demo-accounts.md) là nơi sở hữu matrix và negative cases. Setup/migrate/seed/init có tác động dữ liệu theo bảng scripts; không chạy trên DB thật để thử.
+
+## Run manually without the launcher
+
+Chạy tại **root**, sau khi đã cài dependencies, Composer autoload, cấu hình và migrate/seed phù hợp theo các bước khởi tạo ở trên. Kiểm cổng8443/8000/server hiện hữu trước để không mở trùng. Hai terminal riêng; script launcher hiện là cách mặc định thuận tiện.
+
+Terminal PHP trên PowerShell:
+
+```powershell
+$phpBinary = ".\.tools\php\php.exe"
+if (-not (Test-Path -LiteralPath $phpBinary)) { $phpBinary = "php" }
+New-Item -ItemType Directory -Force -Path .\backend\public\assets | Out-Null
+Copy-Item -Path .\frontend\public\* -Destination .\backend\public\assets -Recurse -Force
+& $phpBinary -d upload_max_filesize=5M -d post_max_size=6M -S 127.0.0.1:8000 -t backend/public backend/router.php
+```
+
+Copy static assets chỉ đồng bộ file public vào backend/public/assets, không DB; thực hiện lại khi assets đổi. Không copy `.env`/source private vào webroot. Catalog SSR: http://127.0.0.1:8000/products.
+
+Terminal frontend tại root:
+
+```powershell
+$env:BACKEND_URL = "http://127.0.0.1:8000"
+pnpm.cmd --dir frontend exec vite --host 127.0.0.1 --port 8443 --strictPort
+```
+
+UI http://localhost:8443/ và http://localhost:8443/#/admin. Proxy API/uploads/products/assets cần cùng PHP; nếu đổi cổng phải đổi BACKEND_URL tương ứng. Ctrl+C dừng từng process. `frontend/dist` cần web server PHP/same-origin proxy, không deploy dist riêng như full ứng dụng. HTTPS/Secure cookie và DocumentRoot backend/public cần cấu hình ở production; PHP dev server chỉ phát triển.
+
+## Script reference
+
+Tất cả command từ root, Windows dùng `.cmd` khi PowerShell chặn npm.ps1. Chỉ kiểm script tồn tại trong lần viết doc; không chạy setup/build/test/DB/server trong task tài liệu này.
+
+| Script command | Script entry thật | Điều kiện / tác động |
+| --- | --- | --- |
+| `npm.cmd run dev` | `node scripts/dev.mjs` | Vite/reuse dev project; port8443 |
+| `npm.cmd run build` | `npm run build --workspace frontend --` | Generate frontend/dist |
+| `npm.cmd run preview` | `npm run preview --workspace frontend --` | Preview build frontend; vẫn cần PHP backend |
+| `npm.cmd run typecheck` | `npm run typecheck --workspace frontend` | TS check |
+| `npm.cmd run test` | `npm run test --workspace frontend` | node:test frontend |
+| `npm.cmd run format` | `npm run format --workspace frontend --` | Có thể rewrite source theo path được truyền |
+| `npm.cmd run backend:setup` | `powershell -NoProfile -ExecutionPolicy Bypass -File scripts/setup-backend.ps1 -SkipMySql` | Download local PHP/Composer/CA; cần mạng và dependencies OS |
+| `npm.cmd run backend:init` | `node scripts/backend.mjs init` | Create missing app/test DB, không drop/truncate |
+| `npm.cmd run backend:connection` | `node scripts/backend.mjs connection` | Read DB connection/version/schema, không secret output |
+| `npm.cmd run backend:start-db` | `node scripts/backend.mjs start-db` | Windows local DB helper nếu đã chọn; không bật DB khác thay NAS |
+| `npm.cmd run backend:stop-db` | `node scripts/backend.mjs stop-db` | Dừng local DB helper đã chọn, không NAS |
+| `npm.cmd run backend:doctor` | `node scripts/backend.mjs doctor` | Read diagnostics |
+| `npm.cmd run backend:migrate` | `node scripts/backend.mjs migrate` | DDL+ledger; lỗi có thể partial, không sửa applied SQL |
+| `npm.cmd run backend:seed` | `node scripts/backend.mjs seed` | Legacy catalog seed tối thiểu, không bắt buộc cùng seed-store |
+| `npm.cmd run backend:seed-store` | `node scripts/backend.mjs seed-store` | Public content một lần, không users/orders hoặc overwrite edits |
+| `npm.cmd run backend:create-admin` | `node scripts/backend.mjs create-admin` | Tạo Admin chưa có từ local env, không reset tài khoản cũ |
+| `npm.cmd run backend:test` | `node scripts/backend.mjs test` | PHP unit, không DB |
+| `npm.cmd run backend:test-db` | `node scripts/backend.mjs test-db` | Writes/rollback fixtures ở DB _test |
+| `npm.cmd run backend:test-http` | `node backend/tests/http.mjs` | PHP temp port + _test fixtures/cleanup/concurrency |
+| `npm.cmd run backend:lint` | `node scripts/backend.mjs lint` | PHP syntax |
+| `npm.cmd run dev:backend` | `node scripts/backend.mjs serve` | Copy static assets + PHP8000 |
+
+
+## Verification and troubleshooting notes
+
+401: kiểm account active/session;403: kiểm role/CSRF, token sau login/logout có đổi;409: unique key/stock/quote/order state;503: PHP/DB/schema/shipping config chưa sẵn sàng. UI không fallback mock. Không gửi password/hash/token hoặc credentials để debug. Khi cần DB/HTTP tests chỉ dùng DB `_test`, không target application DB. Lỗi build/commands phải có actual log/head/environment, không suy từ source thành Pass. Scripts chưa có E2E/load riêng thì dùng planned manual cases/runner ticket, không bịa npm command.
+
+## Documentation index
+
+| Document | Trách nhiệm |
+| --- | --- |
+| [make-doc-plan.md](doc/make-doc-plan.md) | Nguồn, manifest, crosswalk policy và kiểm tra tài liệu |
+| [summary-assigment.md](doc/summary-assigment.md) | 39 FR/12 NFR, BR/TC, scope/gaps và legacy crosswalk |
+| [explain-detail.md](doc/explain-detail.md) | Thuật ngữ, ví dụ và cách hiểu dễ sai |
+| [tech-stack.md](doc/tech-stack.md) | Stack/decisions/trade-offs/NFR controls |
+| [structure-architecture.md](doc/structure-architecture.md) | Boundaries/dependencies/wiring và cây thiết kế |
+| [repository-layout.md](doc/repository-layout.md) | Filesystem/entries/scripts/ownership hiện tại |
+| [domain-know-how.md](doc/domain-know-how.md) | Nghiệp vụ, lifecycle và invariants |
+| [demo-accounts.md](doc/demo-accounts.md) | Cách cấp accounts, seed/fixtures và scope checks |
+| [user-flow.md](doc/user-flow.md) | Use case và20 user flows có source/vector diagrams |
+| [schema-database.md](doc/schema-database.md) | EERD và field mapping đủ179 columns/22 tables |
+| [work-flow.md](doc/work-flow.md) | Ticket/labels/GitHub/Git/PR rules,22 API entries và traceability |
+| [backlog.md](doc/backlog.md) | 65 tickets, Feature/milestone/capacity/Kanban/Project readiness |
+
+Quy trình execution: ticket được giao → branch từ updated main → implement/checks → PR → **người dùng review/approve/merge/accept**. [Backlog](doc/backlog.md) giữ local plan; task docs chưa tạo issue/Project/milestone/label/PR, không tự sync Markdown với GitHub.

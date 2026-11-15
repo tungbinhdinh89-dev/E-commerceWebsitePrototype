@@ -1,0 +1,71 @@
+\usepackage{fontspec}
+\setmainfont{Latin Modern Roman}
+\setsansfont{Latin Modern Sans}
+\setmonofont{Latin Modern Mono}
+\usepackage[vietnamese]{babel}
+\usepackage[a4paper,left=2.5cm,right=2.3cm,top=2.9cm,bottom=2.3cm,
+  headheight=32pt,headsep=9pt,footskip=24pt]{geometry}
+\usepackage{amsmath,amssymb,graphicx,xcolor}
+\usepackage{array,booktabs,longtable,tabularx,ragged2e}
+\usepackage{setspace,titlesec,fancyhdr,caption,float,tikz,listings}
+\usepackage{enumitem,xurl,pdflscape}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\definecolor{ReportBlue}{RGB}{10,44,167}
+\definecolor{HeadingColor}{RGB}{30,40,59}
+\usepackage[autostyle=false,style=english]{csquotes}
+\usepackage[backend=biber,style=numeric,sorting=none]{biblatex}
+\DeclareLanguageMapping{vietnamese}{english}
+\addbibresource{references.bib}
+\usepackage[unicode,colorlinks=true,linkcolor=ReportBlue,citecolor=ReportBlue,
+  urlcolor=ReportBlue,hypertexnames=false]{hyperref}
+\hypersetup{pdftitle={\ReportTitle},pdfauthor={\ReportAuthor},
+  pdfsubject={Báo cáo học phần Lập Trình Web}}
+\renewcommand{\contentsname}{Mục lục}
+\renewcommand{\listfigurename}{Danh sách hình vẽ}
+\renewcommand{\listtablename}{Danh sách bảng}
+\renewcommand{\figurename}{Hình}
+\renewcommand{\tablename}{Bảng}
+\setcounter{tocdepth}{2}
+\titleformat{\section}{\Large\bfseries\color{HeadingColor}}{\thesection}{.7em}{}
+\titleformat{\subsection}{\large\bfseries\color{HeadingColor}}{\thesubsection}{.7em}{}
+\titleformat{\subsubsection}{\normalsize\bfseries}{\thesubsubsection}{.7em}{}
+\titlespacing*{\section}{0pt}{18pt}{10pt}
+\titlespacing*{\subsection}{0pt}{12pt}{6pt}
+\setstretch{1.15}
+\setlength{\parindent}{1cm}
+\setlength{\parskip}{3.3pt}
+\setlength{\LTpre}{8pt}
+\setlength{\LTpost}{10pt}
+\newcolumntype{P}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\captionsetup{font=small,labelfont=bf,skip=7pt}
+\setlist{leftmargin=1.8em,itemsep=4pt,topsep=4pt}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\begin{tabular}{@{}m{.95cm}@{\hspace{.4cm}}l@{}}
+  \includegraphics[width=.94cm]{figures/hcmut.png}&
+  \begin{tabular}{@{}l@{}}\small Trường Đại học Bách Khoa - ĐHQG TP.HCM\\[-2pt]
+  \small Khoa Khoa học và Kỹ thuật Máy tính\end{tabular}
+\end{tabular}}
+\fancyfoot[L]{\footnotesize \ReportFooter}
+\fancyfoot[R]{\footnotesize Trang \thepage}
+\renewcommand{\headrulewidth}{.4pt}
+\renewcommand{\footrulewidth}{.4pt}
+\lstset{basicstyle=\ttfamily\footnotesize,columns=fullflexible,
+  keepspaces=true,showstringspaces=false,breaklines=true,breakatwhitespace=false,
+  frame=single,backgroundcolor=\color{gray!4},captionpos=t,
+  aboveskip=10pt,belowskip=10pt,tabsize=2}
+\tikzset{flow/.style={draw=ReportBlue!65,rounded corners,fill=blue!3,
+  align=center,font=\small,text width=3.3cm,minimum height=.85cm},
+  decision/.style={diamond,draw=ReportBlue!65,fill=blue!3,aspect=2,
+  align=center,font=\small,inner sep=1.5pt,text width=2.6cm},
+  uc/.style={ellipse,draw=ReportBlue!65,fill=blue!3,align=center,
+  font=\small,text width=4.1cm,minimum height=.85cm},
+  entity/.style={draw=ReportBlue!65,rounded corners,fill=blue!3,
+  align=left,font=\small,text width=3.8cm,inner sep=6pt},
+  arrow/.style={-{Stealth[length=2mm]},draw=HeadingColor,thick}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\sourcepath}[1]{\par\noindent\textit{Mã nguồn đối chiếu: }\path{#1}.\par}
+\newcommand{\pending}{Chưa chạy}
+\emergencystretch=2em
+\urlstyle{tt}

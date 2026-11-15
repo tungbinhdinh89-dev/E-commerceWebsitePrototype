@@ -1,0 +1,35 @@
+\clearpage
+\appendix
+\section{Đối chiếu nguồn và checklist bàn giao}
+\begingroup\small
+\subsection{Nguồn đối chiếu trong repository}
+Các đường dẫn trong báo cáo tính từ root dự án. Tài liệu đã đọc gồm SRS 14 trang, README, rules, backend README, database README, manifest, route, service, migration và cấu trúc test. Tệp assignment gốc được SRS dẫn lại nhưng không có trong bộ file đã kiểm tra; không trích như một nguồn đã trực tiếp đọc.
+\begin{longtable}{@{}P{8cm}P{6.5cm}@{}}
+\caption{Đường dẫn nguồn để kiểm tra lại nội dung}\label{tab:evidence}\\
+\toprule Nguồn & Nội dung được đối chiếu\\\midrule\endfirsthead
+\toprule Nguồn & Nội dung được đối chiếu\\\midrule\endhead
+\path{Computer_Store_SRS_Assignment.pdf} & FR/NFR, BR, UC, TC và yêu cầu báo cáo.\\
+\path{rules.md} & Ranh giới module, ràng buộc stack, DB-02/DB-03.\\
+\path{README.md}; \path{backend/README.md} & Setup, commands, persistence và phần P0 còn thiếu.\\
+\path{backend/database/README.md} & Ownership, transaction, số bảng và giới hạn schema.\\
+\path{backend/routes/web.php} & Route HTTP thực có.\\
+\path{backend/app/Modules/Order/Services/OrderService.php} & Checkout, ownership và chuyển trạng thái.\\
+\path{backend/app/Modules/Order/Entities/OrderStatus.php} & State machine của đơn.\\
+\path{backend/database/migrations/001_identity.sql} tới \path{007_frontend_persistence.sql} & Bảy migration, 21 bảng dữ liệu/hỗ trợ.\\
+\path{frontend/src/service.ts}; \path{frontend/src/App.tsx} & Fetch/cache và cấu trúc UI hiện tại.\\
+\path{backend/tests/}; \path{frontend/tests/} & Test đã được viết; chưa chạy lại trong lần lập báo cáo.\\
+\bottomrule\end{longtable}
+
+\subsection{Checklist trước nghiệm thu và nộp}
+\begin{itemize}[label=$\square$,itemsep=1pt,parsep=0pt]
+\item Điền lớp/nhóm, email liên hệ, thành viên và phân công thực tế.
+\item Đối chiếu assignment chính thức nếu được cung cấp, xác nhận baseline bản nộp với giảng viên.
+\item Hoàn tất các FR còn thiếu và giao diện PHP Views/TailAdmin.
+\item Chạy TC-01–TC-31, thêm các ca NFR còn thiếu, lưu Actual/Status/evidence và sửa lỗi.
+\item Chụp giao diện thật ở viewport/trình duyệt đã kiểm; ảnh không chứa secrets hoặc dữ liệu riêng.
+\item Thử cài trên môi trường sạch theo README; kiểm SQL/migration và seed nội dung.
+\item Chốt source/SQL/hướng dẫn; loại .env, credentials, .tools private và dữ liệu cá nhân khỏi bộ nộp.
+\item Build lại báo cáo, xem mục lục, bảng/hình/citation và kiểm PDF cuối.
+\item Review bởi người phụ trách, chuẩn bị demo và chỉ nộp sau khi các mục bắt buộc đạt.
+\end{itemize}
+\endgroup

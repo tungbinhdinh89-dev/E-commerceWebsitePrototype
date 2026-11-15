@@ -1,0 +1,113 @@
+\section{Hiện thực các thành phần của dự án}
+\label{sec:implementation}
+\subsection{Cấu trúc mã nguồn}
+\begin{lstlisting}[caption={Cấu trúc thư mục rút gọn đã đối chiếu},label={lst:structure}]
+frontend/
+  src/                  React UI, Fetch adapter, context
+  resources/views/      PHP catalog views
+  public/               Local static assets
+  tests/                Frontend regression tests
+backend/
+  app/Core/             Router, Session, Database, View
+  app/Http/             StoreController
+  app/Modules/          User, Product, Cart, Order,
+                        Site, Contact, Faq, Article, Comment
+  app/Support/          Input, Money, Uploader, Page
+  routes/web.php        HTTP route declarations
+  database/migrations/  SQL schema versions
+  database/seeders/     Public store content
+  public/               PHP webroot and uploads
+  tests/                Unit, database and HTTP tests
+scripts/                Workspace/dev/backend commands
+doc/                    Project design documents
+report/                 Editable LaTeX report
+\end{lstlisting}
+Frontend không chứa password hash, dữ liệu nguồn hoặc mock fallback khi PHP lỗi. \code{service.ts} là adapter Fetch với cache RAM, \code{data.ts} chứa kiểu/nhãn/trạng thái rỗng, \code{useRemoteData.ts} tải các danh sách phân trang. Khi ghi thành công, giao diện tải lại trạng thái server; không coi thay đổi tạm trong browser là persistence.
+
+\subsection{Bản đồ chức năng và file hiện thực}
+\begin{longtable}{@{}P{3cm}P{6.6cm}P{4.9cm}@{}}
+\caption{Ánh xạ chức năng với mã nguồn}\label{tab:source-map}\\
+\toprule Thành phần & File / lớp chính & Trách nhiệm\\\midrule\endfirsthead
+\toprule Thành phần & File / lớp chính & Trách nhiệm\\\midrule\endhead
+HTTP & \path{backend/routes/web.php}; \path{Http/StoreController.php} & Route, parse request, JSON envelope, chuyển tới service.\\
+Identity & \path{Modules/User/Services/UserService.php}; \path{Core/Session.php} & Login/register/profile, quyền và session.\\
+Catalog & \path{Modules/Product/Services/CatalogService.php} & Giá, tồn kho, CRUD sản phẩm và thao tác reserve/restore.\\
+Sales & \path{Modules/Cart/Services/CartService.php}; \path{Modules/Order/Services/OrderService.php} & Giỏ, checkout, ownership và chuyển trạng thái.\\
+Editorial & \path{Modules/Article}; \path{Modules/Comment} & Tin tức, bài published, bình luận và moderation.\\
+Site / Communication & \path{Modules/Site}; \path{Modules/Contact}; \path{Modules/Faq} & Nội dung công ty, cấu hình, dịch vụ, liên hệ và FAQ.\\
+Kỹ thuật dùng chung & \path{Support/Money.php}; \path{Input.php}; \path{Uploader.php} & Tính tiền, validation và kiểm tra file.\\
+Giao diện & \path{App.tsx}; \path{StorePages.tsx}; \path{ContentPages.tsx}; \path{Admin.tsx} & Điều hướng, màn hình public/member/admin.\\
+\bottomrule\end{longtable}
+
+\subsection{Các entry API hiện có}
+Tên endpoint dưới đây phản ánh \textbf{route đang có trong mã nguồn}, không phải bản thiết kế REST được tạo mới. \code{/api/store/{action}} gom thao tác theo action; nếu đổi thành tài nguyên REST sau này cần kế hoạch tương thích và cập nhật adapter, không tự ghi các URL chưa tồn tại như đã hiện thực.
+\begin{longtable}{@{}P{1.5cm}P{7cm}P{6cm}@{}}
+\caption{Danh mục route PHP đã đối chiếu}\label{tab:api}\\
+\toprule Method & Entry / endpoint & Chức năng và quyền\\\midrule\endfirsthead
+\toprule Method & Entry / endpoint & Chức năng và quyền (tiếp)\\\midrule\endhead
+GET & \path{/api/health} & Database/schema readiness; không trả credentials.\\
+GET & \path{/api/store} & Snapshot công khai và phần dữ liệu đúng quyền session.\\
+GET & \path{/api/store/list/{resource}} & Search/filter/pagination; users/contacts yêu cầu Admin; đơn theo chủ sở hữu.\\
+GET & \path{/api/store/item/{resource}/{id}} & Chi tiết; kiểm visibility và ownership.\\
+POST & \path{/api/store/{action}} & CSRF, validation, quyền tại PHP; thao tác login/cart/checkout/admin.\\
+POST & \path{/api/store/admin-upload} & Nhánh action upload trong route chung; multipart image, Admin và CSRF.\\
+GET & \path{/products}, \path{/products/{slug}} & Catalog PHP Views, không cần React.\\
+GET & \path{/api/products} & Kết quả catalog dạng JSON cho progressive search.\\
+\bottomrule\end{longtable}
+Các action tiêu biểu là login, register, logout, profile, cart-add, cart-quantity, favorite, checkout, comment, contact, newsletter, admin-product-save, admin-order-status và admin-content-save. Giá trả qua API dạng decimal string; envelope gồm success/data/message/errors theo phản hồi hiện tại. Không mở CORS chỉ để bỏ qua cấu hình same-origin.
+
+\subsection{Hiện thực xác thực và phân quyền}
+Đăng ký chỉ tạo Member; không cho client chọn role Admin. Bootstrap admin dùng CLI. Login kiểm tài khoản, mật khẩu hash và trạng thái, cập nhật session; các yêu cầu tiếp theo dùng user đã xác thực. Tài khoản khóa phải bị chặn ở server. Các danh sách users/contacts yêu cầu Admin và truy cập đơn phải kiểm chủ sở hữu.
+
+Client gửi CSRF token từ snapshot và đổi token theo vòng đời đăng nhập/đăng xuất. Adapter phải tránh response cũ sau logout đưa dữ liệu cá nhân trở lại cache. Các bài test frontend đã có tình huống này; báo cáo chưa coi việc có test trong repo là kết quả chạy của bản báo cáo.
+
+\subsection{Giỏ hàng, báo giá và checkout}
+Guest dùng session, Member dùng carts/cart\_items của MySQL. Sau đăng nhập, CartService gộp giỏ Guest; số lượng, sản phẩm ẩn và giới hạn tồn kho cần được kiểm tra khi gộp. Tổng trên màn hình chỉ là báo giá; PHP tính lại khi đặt.
+
+Với đơn có các mặt hàng $i$, tổng tiền được mô tả bằng:
+\begin{align}
+S &= \sum_i p_iq_i,\\
+D &= \min\left(\operatorname{discount}(S,b),D_{\max}\right),\\
+T &= S-D+F(S-D).
+\end{align}
+$p_i$ và $q_i$ lấy từ dữ liệu được kiểm tra tại server; $b$ là basis points của coupon hợp lệ; $D_{\max}$ là trần giảm; $F$ là phí giao hàng theo cấu hình và ngưỡng miễn phí. Không có coupon thì $D=0$. Cách làm tròn thực tế thuộc Money, phải kiểm thử theo giá trị nguyên; công thức không thay code kiểm overflow.
+
+OrderService mở transaction, khóa giỏ, gọi Catalog reserve, lưu order/items và xóa giỏ. Nếu expectedTotal không khớp, server trả lỗi yêu cầu kiểm tra lại; nó không chấp nhận giá browser. Code mẫu sau là \textbf{giả mã giải thích}, không phải file có thể thay trực tiếp cho service:
+\begin{lstlisting}[caption={Giả mã mô tả ranh giới transaction}]
+requireAuthenticatedMember();
+validateRecipientInput();
+beginTransaction();
+try {
+    cart = lockMemberCart();
+    items = catalog.reserveUsingLockedPrices(cart);
+    totals = calculateOnServer(items, coupon, shipping);
+    order = saveOrderAndSnapshots(items, totals);
+    clearMemberCart();
+    commit();
+    return order.id;
+} catch (error) {
+    rollback();
+    throw error;
+}
+\end{lstlisting}
+
+\subsection{Upload, nội dung và quyền riêng tư}
+Uploader kiểm Fileinfo, kích thước và dữ liệu ảnh; chỉ chấp nhận JPG/PNG/WebP tối đa 5 MB, đặt tên file ngẫu nhiên. File được lưu dưới public/uploads; metadata media ở database. Dev router và cấu hình web server phải chặn thực thi script trong uploads. Chức năng avatar riêng vẫn chưa được coi là hoàn tất chỉ vì uploader chung đã có.
+
+Tin public lọc theo trạng thái; bình luận mặc định pending. Liên hệ và danh sách user không được đưa vào snapshot Guest. Newsletter chỉ lưu email; trạng thái replied của contact là thao tác đánh dấu nội bộ, chưa chứng minh có email trả lời thực tế. Các nội dung nhiều dòng/HTML phải được escape hoặc kiểm soát theo cách render hiện tại.
+
+\subsection{Hiện trạng và phần chưa hoàn thiện}
+\begin{table}[H]\centering
+\caption{Đánh giá hiện trạng theo mã nguồn và README}\label{tab:implementation-status}
+\begin{tabularx}{\linewidth}{@{}P{4.2cm}YP{3cm}@{}}\toprule
+Hạng mục & Quan sát & Mức chứng cứ\\\midrule
+PHP/PDO/MySQL, persistence UI & Có routes/services/repositories/migrations. & Có code; chưa chạy lại.\\
+Checkout/cancel transaction & Có lock, snapshot và state machine. & Có code/tests; chờ thực thi.\\
+PHP catalog SSR & Có route và PHP Views. & Có code; chờ smoke test.\\
+PHP Views toàn site/TailAdmin & README ghi chưa hoàn tất, UI còn React/Astra. & Khoảng trống P0.\\
+Mật khẩu/avatar/danh mục & Chức năng chuyên biệt còn cần hoàn thiện. & Khoảng trống P0.\\
+Trạng thái xử lý giỏ FR-P10 & carts chưa có status; route cập nhật tương ứng chưa đầy đủ. & Khoảng trống SRS.\\
+SEO, W3C, browser, responsive & Chưa có bằng chứng nghiệm thu được tạo trong lần viết. & Chưa kết luận đạt.\\
+\bottomrule\end{tabularx}
+\end{table}
+\clearpage

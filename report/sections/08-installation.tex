@@ -1,0 +1,67 @@
+\section{Cài đặt môi trường và hướng dẫn chạy}
+\label{sec:installation}
+\subsection{Yêu cầu môi trường}
+\begin{table}[H]\centering
+\caption{Điều kiện để cài đặt ứng dụng}\label{tab:environment}
+\begin{tabularx}{\linewidth}{@{}P{3.4cm}Y@{}}\toprule
+Thành phần & Yêu cầu theo cấu hình dự án\\\midrule
+Node / package manager & Node 22.12+ trong dòng 22; pnpm theo \code{.mise.toml} và lockfile.\\
+PHP & PHP 8.3; extensions fileinfo, mbstring, PDO/PDO MySQL; Composer cho autoload.\\
+Database & MySQL/InnoDB, utf8mb4; database ứng dụng và database riêng \code{_test}.\\
+Web server & PHP dev server khi phát triển; Apache/Nginx cấu hình PHP khi triển khai.\\
+Quyền filesystem & PHP ghi được uploads và session cache; không public cấu hình/secret.\\
+LaTeX & TeX Live với LuaLaTeX, latexmk, Biber; Python 3 nếu dùng build script báo cáo.\\
+\bottomrule\end{tabularx}
+\end{table}
+Ghi lại phiên bản PHP/MySQL thực tế khi cài; bản MySQL trên máy khác cần được kiểm tương thích với migrations và tests.
+
+\subsection{Chuẩn bị source và cấu hình}
+Thực hiện tại root \code{E-commerceWebsitePrototype}. Cài dependency theo lockfile, sau đó chuẩn bị PHP bằng script nếu máy chưa có toolchain:
+\begin{lstlisting}[caption={Chuẩn bị môi trường phát triển trên PowerShell}]
+pnpm.cmd install --frozen-lockfile
+npm.cmd run backend:setup
+Copy-Item backend/.env.example backend/.env
+# Edit backend/.env with local configuration.
+\end{lstlisting}
+Chỉ sao chép \code{backend/.env} khi chưa tồn tại; không ghi đè cấu hình đang dùng. Setup tải PHP/Composer vào .tools; nếu đã có PHP thì cài autoload bằng Composer và kiểm các extensions theo README.
+
+Điền host/port/database, tài khoản database và thông tin bootstrap Admin trong môi trường local. Không đưa credentials vào frontend, Git, report hoặc ảnh chụp; tách DB test khỏi dữ liệu ứng dụng.
+
+\subsection{Khởi tạo database và tài khoản}
+\begin{lstlisting}[caption={Các bước khởi tạo theo README}]
+npm.cmd run backend:connection
+npm.cmd run backend:init
+npm.cmd run backend:migrate
+npm.cmd run backend:create-admin
+npm.cmd run backend:seed-store
+npm.cmd run backend:doctor
+\end{lstlisting}
+connection kiểm kết nối, init tạo DB còn thiếu, migrate áp dụng migration mới. create-admin cần BOOTSTRAP\_ADMIN\_EMAIL/PASSWORD trong môi trường, mật khẩu 16–72 byte; không có mật khẩu mặc định hoặc reset Admin cũ. seed-store nạp nội dung công khai một lần, không ghi đè dữ liệu đã sửa.
+
+\subsection{Chạy thủ công với hai terminal}
+Terminal thứ nhất chạy PHP:
+\begin{lstlisting}
+npm.cmd run dev:backend
+\end{lstlisting}
+Terminal thứ hai chạy frontend:
+\begin{lstlisting}
+npm.cmd run dev
+\end{lstlisting}
+Mở \url{http://localhost:8443/}; trang quản trị hiện tại là \url{http://localhost:8443/\#/admin}. PHP mặc định tại \url{http://127.0.0.1:8000}. Vite proxy các đường dẫn API/uploads/products/assets đến PHP. Kiểm server hiện hữu trước khi mở thêm process. Nếu đổi cổng PHP, BACKEND\_PORT và BACKEND\_URL phải tương ứng.
+
+Catalog SSR có thể truy cập trực tiếp tại \url{http://127.0.0.1:8000/products}. Khi backend lỗi, UI phải báo lỗi và cho thử lại; không hiển thị dữ liệu mock như kết quả thật. Kết thúc server bằng Ctrl+C tại terminal tương ứng.
+
+\subsection{Build ứng dụng và triển khai}
+\code{npm.cmd run build} tạo frontend/dist; dist riêng không cung cấp PHP API. Bản deploy cần same-origin hoặc reverse proxy đúng các đường dẫn PHP và uploads. DocumentRoot của PHP là backend/public, không phải root repo. Không public .env, .tools, app, config hay vendor; thư mục uploads không được thực thi script.
+
+Production cần HTTPS và cookie Secure, giới hạn upload ở web server/PHP nhất quán và thông báo lỗi không lộ SQL/stack/secret. PHP built-in dev server không được xem là cấu hình production. Backup và việc kiểm phục hồi dữ liệu nên được chuẩn bị trước khi sử dụng dữ liệu thật.
+
+\subsection{Build riêng báo cáo LaTeX}
+Chạy từ thư mục report:
+\begin{lstlisting}
+powershell -NoProfile -ExecutionPolicy Bypass -File .\build.ps1
+# Equivalent:
+python build.py --tex main.tex --engine lualatex
+\end{lstlisting}
+PDF: \code{dist/main.pdf}; log: \code{logs/main}.
+\clearpage

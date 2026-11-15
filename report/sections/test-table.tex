@@ -1,0 +1,38 @@
+{\small
+\begin{longtable}{@{}P{1.3cm}P{4.7cm}P{6.1cm}P{2.4cm}@{}}
+\caption{Kịch bản kiểm thử đối chiếu SRS; kết quả thực tế chưa chạy}\label{tab:test-cases}\\
+\toprule TC & Dữ liệu / thao tác & Kết quả mong đợi & Yêu cầu\\\midrule\endfirsthead
+\toprule TC & Dữ liệu / thao tác & Kết quả mong đợi & Yêu cầu\\\midrule\endhead
+TC-01 & Đăng ký hợp lệ. & Tạo đúng một Member; không trả hash. & FR-A01\\
+TC-02 & Email trùng, kể cả hai request đồng thời. & Từ chối có thông báo; không tạo user trùng. & FR-A01\\
+TC-03 & Sai mật khẩu; đăng xuất rồi gọi chức năng riêng. & Không đăng nhập; session cũ không dùng tiếp. & FR-A02\\
+TC-04 & User bị khóa đăng nhập. & Bị từ chối, không có session hợp lệ. & FR-A03\\
+TC-05 & Member gọi route/thao tác quản trị. & 403 hoặc điều hướng an toàn; không thay DB. & FR-A03\\
+TC-06 & Đổi hồ sơ, mật khẩu và avatar hợp lệ. & Lưu MySQL/file thật, đăng nhập lại bằng mật khẩu mới. & FR-A04–05\\
+TC-07 & Admin tìm user, khóa/mở và reset mật khẩu. & Quyền được kiểm, dữ liệu đổi đúng, không lộ mật khẩu gốc. & FR-A06–07\\
+TC-08 & Admin đổi hotline/logo/banner, tải lại public. & Nội dung mới đọc từ server, ảnh là đường dẫn nội bộ. & FR-H01–02,H05\\
+TC-09 & Gửi liên hệ hợp lệ. & Một dòng contacts có trạng thái unread. & FR-H03\\
+TC-10 & Gửi liên hệ thiếu email/nội dung, bỏ JS. & Client và PHP từ chối; không có bản ghi sai. & FR-H03\\
+TC-11 & Admin cập nhật read/replied và xóa liên hệ. & Trạng thái đúng, không tự coi là đã gửi email thật. & FR-H04–05\\
+TC-12 & CRUD FAQ, giới thiệu, dịch vụ và bảng giá. & Sửa/ẩn/xóa phản ánh public, thứ tự FAQ đúng. & FR-F01–06\\
+TC-13 & Tìm sản phẩm, lọc và từ khóa không có kết quả. & Danh sách/empty state đúng, phân trang không sai tổng. & FR-P01–02\\
+TC-14 & Admin CRUD/ẩn sản phẩm. & Dữ liệu giữ sau reload; sản phẩm ẩn không bán công khai. & FR-P03\\
+TC-15 & Giá âm, stock sai, SKU trùng. & Từ chối trước khi tạo/sửa dữ liệu không hợp lệ. & FR-P03\\
+TC-16 & Ảnh JPG/PNG/WebP, file PHP giả ảnh, vượt 5 MB. & Ảnh hợp lệ lưu server; loại sai bị chặn, không thực thi. & FR-P04,X04\\
+TC-17 & Giỏ có hai sản phẩm, sửa/xóa; đăng nhập từ Guest. & Số lượng/tổng đúng, merge không ghi đè sai giỏ. & FR-P05–06\\
+TC-18 & Checkout COD đủ kho và dữ liệu nhận hàng. & Order pending + snapshot; trừ kho, xóa giỏ cùng commit. & FR-P07–08\\
+TC-19 & Thiếu kho hoặc giá đổi, hai checkout tranh stock=1. & Không bán âm; request lỗi không để order/kho dở dang. & FR-P07–08\\
+TC-20 & Member sửa ID để xem đơn người khác. & Không trả dữ liệu riêng của chủ đơn khác. & FR-P08\\
+TC-21 & Chuyển pending→confirmed; completed→pending. & Chấp nhận chuyển hợp lệ, từ chối chuyển ngược. & FR-P09\\
+TC-22 & Hủy pending/confirmed, lặp hoặc hủy đồng thời. & Hoàn kho đúng một lần; trạng thái cuối không bị mở lại. & FR-P09\\
+TC-23 & Admin đăng/ẩn tin, tìm kiếm và phân trang. & Public chỉ hiện published; metadata giữ sau reload. & FR-N01–03\\
+TC-24 & Member bình luận, Admin duyệt/ẩn. & Pending chưa công khai; approved mới hiển thị. & FR-N04–05\\
+TC-25 & Nhập payload HTML/script ở bình luận/liên hệ. & Không thực thi script khi public hoặc admin hiển thị. & NFR-06\\
+TC-26 & POST không hoặc sai X-CSRF-Token. & Server từ chối và không ghi dữ liệu. & NFR-07\\
+TC-27 & Chuỗi SQL đặc biệt trong search/login/filter. & Không vượt auth, không lộ SQL; tham số được xử lý đúng. & NFR-05\\
+TC-28 & Duyệt trang/form ở 360/768/1280 px. & Không tràn ngang, không che nút, focus còn sử dụng được. & NFR-01\\
+TC-29 & Smoke Chrome/Firefox/Edge, kiểm W3C. & Lưu phiên bản/bằng chứng; không còn lỗi blocker. & NFR-02–03\\
+TC-30 & Dữ liệu test 30 sản phẩm và 20 bài viết. & Chuyển trang đúng số lượng/tổng, không seed vào DB thật. & FR-X03\\
+TC-31 & Admin xem giỏ MySQL và đánh dấu xử lý. & Trạng thái giỏ lưu đúng; cần triển khai schema/flow còn thiếu. & FR-P10\\
+\bottomrule\end{longtable}
+}

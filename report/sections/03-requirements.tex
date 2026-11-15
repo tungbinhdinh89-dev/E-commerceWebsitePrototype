@@ -1,0 +1,55 @@
+\section{Phân tích yêu cầu hệ thống}
+\label{sec:requirements}
+\subsection{Ràng buộc và mức độ ưu tiên}
+SRS v2.0 mô tả website doanh nghiệp kết hợp mua hàng cơ bản, với ba actor và bốn nhóm việc học phần. Các ràng buộc được dẫn lại gồm HTML/CSS/JavaScript, PHP phía server, MySQL, không framework PHP, TailAdmin Free, upload ảnh, validation hai phía, responsive, SEO, kiểm tra W3C và trình duyệt.\cite{srs}
+
+Các FR dưới đây đều thuộc P0 của SRS; không đồng nghĩa tất cả đã được triển khai. Nguồn BT/TK được giữ để phân biệt yêu cầu học phần với chi tiết do dự án chọn. Khác biệt giữa SRS và mã nguồn được tập hợp tại phần đánh giá, đặc biệt PHP Views, TailAdmin, danh mục, mật khẩu và avatar.
+
+\subsection{Actors và ma trận quyền}
+\begin{table}[H]\centering
+\caption{Ma trận quyền theo actor}\label{tab:permissions}
+\begin{tabularx}{\linewidth}{@{}YP{2.0cm}P{2.5cm}P{2.5cm}@{}}\toprule
+Chức năng & Guest & Member & Admin\\ \midrule
+Xem trang công khai, tìm sản phẩm/tin & Có & Có & Có\\
+Đăng ký, đăng nhập & Có & Đã có phiên & Đã có phiên\\
+Quản lý giỏ & PHP Session & Giỏ MySQL & Giỏ cá nhân\\
+Checkout COD và đơn cá nhân & Không & Đơn của mình & Đơn của mình\\
+Hồ sơ, đổi mật khẩu, avatar & Không & Của mình & Của mình\\
+Gửi bình luận & Không & Có & Có\\
+Quản trị tài nguyên và trạng thái đơn & Không & Không & Có\\
+\bottomrule\end{tabularx}
+\end{table}
+
+Ẩn menu trên giao diện không phải kiểm soát truy cập. Server phải kiểm role của session cho mọi thao tác quản trị và kiểm chủ sở hữu khi đọc đơn hàng. Mọi tham số như \code{admin=1}, \code{userId} hoặc ID trên URL phải được xem là đầu vào chưa tin cậy.
+
+\subsection{Bảng yêu cầu chức năng}
+\input{sections/requirements-table}
+
+\subsection{Bảng yêu cầu phi chức năng}
+Các mốc 360/768/1280 px và mục tiêu phản hồi nhỏ hơn 3 giây là tiêu chí kỹ thuật được SRS lựa chọn để kiểm tra, không được trình bày là benchmark đã đo hoặc toàn bộ ngưỡng chấm điểm do giảng viên công bố.
+\input{sections/nfr-table}
+
+\subsection{Quy tắc nghiệp vụ}
+\begin{longtable}{@{}P{1.5cm}P{13.6cm}@{}}
+\caption{Quy tắc nghiệp vụ theo SRS}\label{tab:business-rules}\\
+\toprule Mã & Quy tắc và tác động thiết kế\\\midrule\endfirsthead
+\toprule Mã & Quy tắc và tác động thiết kế (tiếp)\\\midrule\endhead
+BR-01 & Email duy nhất; lưu hash mật khẩu. UQ trong database xử lý cả trường hợp đăng ký đồng thời.\\
+BR-02 & Tài khoản khóa không đăng nhập; PHP kiểm quyền Admin thay vì dựa vào route frontend.\\
+BR-03 & Giá/tồn kho không âm; số lượng mua là số nguyên dương và không vượt khả dụng.\\
+BR-04 & Không checkout giỏ rỗng; chỉ thành viên đã xác thực đặt được đơn.\\
+BR-05 & Đọc lại giá, coupon, phí và tồn kho từ server tại thời điểm chốt đơn.\\
+BR-06 & Đơn, chi tiết, trừ kho và xóa giỏ nằm trong cùng transaction; lỗi không được để dữ liệu dở dang.\\
+BR-07 & pending → confirmed → shipping → completed; chỉ hủy từ pending/confirmed.\\
+BR-08 & Khi hủy hợp lệ, hoàn kho đúng một lần; completed/cancelled là trạng thái cuối.\\
+BR-09 & order\_items giữ snapshot tên, SKU và giá; sửa catalog không sửa lịch sử đơn.\\
+BR-10 & Sản phẩm đã được tham chiếu trong đơn ưu tiên ẩn/ngừng bán, không xóa phá lịch sử.\\
+BR-11 & Chỉ bài published và bình luận approved được hiển thị công khai.\\
+BR-12 & Liên hệ có unread/read/replied; dịch vụ/bảng giá là dữ liệu CRUD, chưa có thanh toán dịch vụ.\\
+\bottomrule\end{longtable}
+
+\subsection{Điều kiện nghiệm thu}
+Một chức năng được chấp nhận khi có luồng chính hoạt động, xử lý đầu vào sai và quyền truy cập, dữ liệu giữ sau tải lại, cùng chứng cứ kiểm thử trên cấu hình đã chốt. Hoàn thành CRUD phải bao gồm phản hồi thành công/thất bại và phân trang theo yêu cầu, không chỉ có form trên màn hình. Với upload phải tồn tại file hợp lệ ở server; với đơn hàng phải đối chiếu database, tổng tiền và thay đổi tồn kho.
+
+Ngoài nghiệm thu chức năng, bản nộp cần schema/migration, dữ liệu công khai để demo, hướng dẫn chạy và báo cáo. Việc đủ số trang báo cáo không thay điều kiện hoàn thiện P0. Các kết quả W3C, responsive và nhiều trình duyệt chỉ được đánh dấu đạt sau khi chạy và lưu bằng chứng.
+\clearpage

@@ -1,0 +1,118 @@
+\section{Thiết kế cơ sở dữ liệu}
+\label{sec:database}
+\subsection{Nguyên tắc và nguồn schema}
+Bảy migration SQL là nguồn schema chuẩn của bản làm việc. Các file tạo 21 bảng dữ liệu/hỗ trợ; ngoài ra Migrator quản lý bảng kỹ thuật \code{schema_migrations}. Báo cáo không tạo thêm bảng payment, shipment hoặc warehouse vì không có nghiệp vụ tương ứng trong MVP. Thông số kỹ thuật sản phẩm dùng text; brand là một cột trong products, không phải bảng brands riêng.\cite{repository}
+
+Khóa chính phần lớn là BIGINT UNSIGNED; favorites dùng khóa ghép, auth\_attempts và data\_seeds dùng khóa tự nhiên. Các giá trị giá/tổng tiền sử dụng DECIMAL. Các trường thời gian được ứng dụng quy ước UTC; khi trình bày cần phân biệt thời điểm lưu và múi giờ giao diện. FK giữ toàn vẹn tham chiếu, còn quyền và các bất biến đa bảng được thực thi tại Service.
+
+\subsection{ERD phần giao dịch}
+\begin{figure}[H]\centering
+\begin{tikzpicture}[every node/.style={font=\small}]
+\node[entity,text width=3.4cm] (u) at (0,9) {\textbf{users}\\PK id\\UQ email\\role, status};
+\node[entity,text width=3.4cm] (c) at (5,9) {\textbf{carts}\\PK id\\FK/UQ user\_id};
+\node[entity,text width=3.4cm] (ci) at (10,9) {\textbf{cart\_items}\\PK id\\FK cart\_id\\FK product\_id\\quantity};
+\node[entity,text width=3.4cm] (o) at (0,4.5) {\textbf{orders}\\PK id\\UQ order\_number\\FK user\_id\\total, status};
+\node[entity,text width=3.4cm] (oi) at (5,4.5) {\textbf{order\_items}\\PK id\\FK order\_id, product\_id\\name/SKU/price snapshot};
+\node[entity,text width=3.4cm] (p) at (10,4.5) {\textbf{products}\\PK id, UQ sku/slug\\FK category\_id\\price, stock, status};
+\node[entity,text width=3.4cm] (im) at (5,0) {\textbf{product\_images}\\PK id\\FK product\_id\\file\_path, is\_primary};
+\node[entity,text width=3.4cm] (cat) at (10,0) {\textbf{categories}\\PK id, UQ slug\\FK parent\_id (nullable)};
+\draw[arrow] (u)--node[above]{1 : 0..1}(c);
+\draw[arrow] (c)--node[above]{1 : 0..n}(ci);
+\draw[arrow] (u)--node[left]{1 : 0..n}(o);
+\draw[arrow] (o)--node[above]{1 : 1..n*}(oi);
+\draw[arrow] (p)--node[above]{1 : 0..n}(oi);
+\draw[arrow] (p)--node[right]{1 : 0..n}(ci);
+\draw[arrow] (cat)--node[right]{1 : 0..n}(p);
+\draw[arrow] (p.south west)--node[above,sloped]{1 : 0..n}(im.north east);
+\draw[arrow] (cat.east) to[out=10,in=-10,looseness=5] node[right]{parent} (cat.east);
+\end{tikzpicture}
+\caption{ERD giao dịch từ migrations 001–003; ký hiệu * là bất biến Service}\label{fig:erd-sales}
+\end{figure}
+Mũi tên đi từ phía được tham chiếu đến phía lưu FK, có ghi lực lượng quan hệ; đây là ERD logic, không dùng chiều mũi tên để mô tả data flow. Một order có ít nhất một item là bất biến checkout, không được bảo đảm chỉ bằng FK. Mỗi user có thể chưa có giỏ, nhưng UQ user\_id không cho hai giỏ persistent của cùng người dùng.
+
+\subsection{ERD nội dung và các quan hệ bổ sung}
+\begin{figure}[H]\centering
+\begin{tikzpicture}
+\node[entity,text width=3.3cm] (u) at (0,3.5) {\textbf{users}\\PK id};
+\node[entity,text width=3.3cm] (a) at (5,3.5) {\textbf{articles}\\PK id\\FK author\_id, UQ slug\\status, published\_at};
+\node[entity,text width=3.3cm] (c) at (10,3.5) {\textbf{comments}\\PK id\\FK article\_id, user\_id\\content, status};
+\node[entity,text width=3.3cm] (f) at (0,-.5) {\textbf{user\_favorites}\\PK (user\_id, product\_id)\\Hai cột đồng thời là FK};
+\node[entity,text width=3.3cm] (p) at (5,-.5) {\textbf{products}\\PK id};
+\node[entity,text width=3.3cm] (m) at (10,-.5) {\textbf{site\_media}\\PK id\\FK uploaded\_by → users\\file\_path, mime, size};
+\draw[arrow] (u)--node[above,font=\small]{1 : 0..n}(a);
+\draw[arrow] (a)--node[above,font=\small]{1 : 0..n}(c);
+\draw[arrow] (u.north)--++(0,1.1)-|node[pos=.3,above,font=\small]{1 : 0..n — bình luận}(c.north);
+\draw[arrow] (u)--node[left,font=\small]{1 : 0..n}(f);
+\draw[arrow] (p)--node[above,font=\small]{1 : 0..n}(f);
+\end{tikzpicture}
+\caption{ERD nội dung và phần bổ sung; FK site\_media được ghi trực tiếp trong node}\label{fig:erd-content}
+\end{figure}
+contacts, faqs, pages, site\_settings, services, newsletter\_subscribers và coupons không có FK tới các bảng trong hình. Mã coupon được chốt như snapshot vào order, không tạo quan hệ FK cứng. auth\_attempts và data\_seeds là bảng hỗ trợ. Những bảng độc lập này vẫn được liệt kê đầy đủ trong bảng ánh xạ.
+
+\subsection{Bảng ánh xạ dữ liệu và module sở hữu}
+{\small
+\begin{longtable}{@{}P{3.1cm}P{2cm}P{4.8cm}P{4.6cm}@{}}
+\caption{Ánh xạ 21 bảng dữ liệu/hỗ trợ vào module}\label{tab:data-mapping}\\
+\toprule Bảng & Module & Dữ liệu chính & Liên kết / ràng buộc\\\midrule\endfirsthead
+\toprule Bảng & Module & Dữ liệu chính & Liên kết / ràng buộc (tiếp)\\\midrule\endhead
+users & User & Tài khoản, profile, hash, role/status. & PK id; UQ email.\\
+categories & Product & Tên/slug, cây danh mục, thứ tự. & FK parent\_id tự tham chiếu.\\
+products & Product & SKU/slug, brand, giá, stock, mô tả. & FK category\_id; UQ SKU/slug.\\
+product\_images & Product & Đường dẫn, alt, ảnh chính. & FK product; UQ ảnh primary qua generated column.\\
+carts & Cart & Giỏ persistent của Member. & FK/UQ user\_id; chưa có trạng thái xử lý giỏ.\\
+cart\_items & Cart & Sản phẩm và số lượng trong giỏ. & FK cart/product; UQ cặp cart/product.\\
+orders & Order & Người nhận, tổng tiền, COD, status, snapshot coupon/phí. & FK user; UQ order\_number; CHECK cancellation.\\
+order\_items & Order & Tên/SKU/giá/ảnh chốt lúc mua. & FK order/product; UQ cặp order/product.\\
+articles & Article & Nội dung, ảnh, SEO, trạng thái, ngày đăng. & FK author; UQ slug; published cần ngày.\\
+comments & Comment & Bình luận và trạng thái kiểm duyệt. & FK article/user; nội dung không rỗng.\\
+contacts & Contact & Tên/email/chủ đề/nội dung, trạng thái. & unread/read/replied; index trạng thái/ngày.\\
+faqs & Faq & Câu hỏi, trả lời, thứ tự và ẩn/hiện. & Index status/sort\_order/id.\\
+pages & Site & Trang công ty, nội dung, ảnh, metadata. & UQ slug; draft/published/hidden.\\
+site\_settings & Site & Khóa/giá trị cấu hình, tiêu đề/trạng thái. & UQ setting\_key.\\
+services & Site & Dịch vụ, mô tả, giá, nhãn giá. & UQ slug; không có đơn dịch vụ.\\
+user\_favorites & User & Yêu thích của Member. & PK ghép user/product, FK hai phía.\\
+\path{newsletter_subscribers} & Contact & Email nhận tin. & UQ email; chưa gửi email tự động.\\
+coupons & Order & Mã, basis points, trần giảm, active. & UQ code; 1–10000 basis points.\\
+site\_media & Site & File, MIME, size, người upload. & FK uploaded\_by; UQ file\_path.\\
+auth\_attempts & User & Số lần thử và cửa sổ thời gian. & PK scope dạng hash IP/email.\\
+data\_seeds & Technical & Ledger nạp nội dung một lần. & PK name; applied\_at.\\
+\bottomrule\end{longtable}}
+\code{schema_migrations} là bảng thứ 22 nếu đếm cả metadata do công cụ migration tạo. Không diễn giải con số 21 là số lượng business entity độc lập; trong đó có bảng hỗ trợ và bảng liên kết.
+
+\subsection{Từ điển dữ liệu trọng tâm}
+\begin{longtable}{@{}P{4.4cm}P{3.2cm}P{6.9cm}@{}}
+\caption{Các cột có tác động trực tiếp đến nghiệp vụ}\label{tab:dictionary}\\
+\toprule Bảng.cột & Kiểu / miền giá trị & Ý nghĩa / quy tắc\\\midrule\endfirsthead
+\toprule Bảng.cột & Kiểu / miền giá trị & Ý nghĩa / quy tắc (tiếp)\\\midrule\endhead
+users.email & VARCHAR(254), UQ & Tên đăng nhập duy nhất; kiểm trùng tại Service và DB.\\
+users.password\_hash & VARCHAR(255) & Không đưa vào response công khai.\\
+users.role & member/admin & Quyền do PHP xác nhận từ session/user.\\
+users.status & active, locked, disabled & Chặn login khi không active.\\
+products.sku & VARCHAR(80), UQ & Mã hàng duy nhất; không phải mã đơn hàng.\\
+products.price & DECIMAL(15,2) & Không âm; giá nguồn khi checkout.\\
+products.stock & INT UNSIGNED & Không âm; khóa hàng trước khi cập nhật cạnh tranh.\\
+products.status & active, hidden, discontinued & Public chỉ bán sản phẩm hợp lệ.\\
+cart\_items.quantity & INT UNSIGNED, CHECK & Số nguyên dương; UQ cart/product.\\
+orders.order\_number & VARCHAR(32), UQ & Mã hiển thị dạng TZ-ngày-random.\\
+orders.user\_id & BIGINT UNSIGNED, FK & Chủ sở hữu lấy từ session, không tin client.\\
+orders.subtotal / discount & DECIMAL(15,2) & Snapshot tổng hàng và giảm giá.\\
+orders.shipping\_fee & DECIMAL(15,2) & Phí chốt tại thời điểm đặt.\\
+orders.total\_amount & DECIMAL(15,2) & subtotal − discount + shipping; Service bảo đảm.\\
+orders.status & ENUM 5 trạng thái & Chuyển tiếp theo Hình~\ref{fig:order-state}.\\
+orders.cancelled\_at & DATETIME nullable & Chỉ có khi đơn cancelled.\\
+\path{orders.inventory_restored_at} & DATETIME nullable & Đi cùng cancelled và transaction hoàn kho.\\
+\path{order_items.product_name} & VARCHAR(200) & Snapshot; không join tên mới để sửa lịch sử.\\
+order\_items.unit\_price & DECIMAL(15,2) & Snapshot không âm; không lấy từ client.\\
+order\_items.image\_path & VARCHAR(255) nullable & Snapshot ảnh do migration 007 bổ sung.\\
+articles.status & draft, published, hidden & Public kiểm published và ngày đăng.\\
+comments.status & pending, approved, hidden & Bình luận mới chờ duyệt.\\
+contacts.status & unread, read, replied & Cờ xử lý nội bộ, không chứng minh đã gửi email.\\
+\bottomrule\end{longtable}
+
+\subsection{Ràng buộc, chỉ mục và xóa dữ liệu}
+UQ email/SKU/slug/order\_number tránh dữ liệu trùng. Index kết hợp trạng thái, ngày và ID hỗ trợ danh sách có thứ tự ổn định. Search dùng prepared LIKE; chưa có FULLTEXT. Ảnh primary dùng cột generated và UNIQUE để giới hạn tối đa một ảnh chính cho mỗi sản phẩm.
+
+Các FK RESTRICT với user/product/order giúp bảo toàn lịch sử. cart\_items có thể bị cascade khi xóa cart; comments cascade khi xóa article. Service vẫn quyết định thao tác xóa có hợp lệ theo nghiệp vụ hay phải ẩn/vô hiệu hóa. CHECK hủy đơn chỉ kiểm tổ hợp timestamp/status; việc hoàn tồn kho đúng một lần cần cả khóa order và transaction, không thể suy ra từ CHECK đơn lẻ.
+
+Migrator theo dõi version/checksum; không sửa migration đã áp dụng. DDL MySQL có thể tự commit nên cần kiểm trạng thái khi lỗi. Seed chỉ nạp nội dung công khai một lần, không ghi đè sửa đổi hoặc tạo tài khoản/đơn mẫu. Admin được tạo riêng qua CLI; credentials không thuộc bộ mã nguồn nộp.
+\clearpage

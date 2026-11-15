@@ -1,0 +1,29 @@
+% !TeX program = lualatex
+% !TeX encoding = UTF-8
+\documentclass[a4paper,11pt]{article}
+\input{metadata}
+\input{preamble}
+\begin{document}
+\input{cover}
+\pagenumbering{roman}
+\input{sections/00-frontmatter}
+\tableofcontents
+\clearpage
+\listoffigures
+\listoftables
+\clearpage
+\pagenumbering{arabic}
+\input{sections/01-introduction}
+\input{sections/02-technology}
+\input{sections/03-requirements}
+\input{sections/04-design}
+\input{sections/05-database}
+\input{sections/06-implementation}
+\input{sections/07-testing}
+\input{sections/08-installation}
+\input{sections/09-management}
+\input{sections/10-conclusion}
+\clearpage
+\printbibliography[heading=bibintoc,title={Tài liệu tham khảo}]
+\input{sections/11-appendix}
+\end{document}

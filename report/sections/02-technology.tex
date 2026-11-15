@@ -1,0 +1,40 @@
+\section{Cơ sở lý thuyết và công nghệ sử dụng}
+\subsection{Mô hình ứng dụng web}
+Trình duyệt hiển thị giao diện và gửi HTTP request; PHP nhận request, xác thực phiên làm việc, kiểm tra dữ liệu và thực hiện nghiệp vụ; MySQL lưu dữ liệu có ràng buộc. Trong bản chuyển tiếp, React gửi Fetch tới PHP qua cùng origin. Vite phục vụ giao diện và chuyển tiếp request khi phát triển, không đảm nhiệm nghiệp vụ phía server.
+
+Tách kiểm tra tại client và server có hai mục đích khác nhau: client giúp phản hồi sớm, còn server quyết định dữ liệu nào được chấp nhận. Giá tiền, role và ID chủ đơn hàng luôn được lấy lại hoặc kiểm tra từ dữ liệu tin cậy tại server.
+
+\subsection{PHP OOP và MVC tự viết}
+Dự án chọn PHP 8.3 thuần và autoload PSR-4 bằng Composer. MVC được tổ chức theo Router, Controller, Service, Repository và View/Response. Controller điều phối HTTP; Service xử lý quy tắc nghiệp vụ; Repository thực hiện SQL qua PDO. Không có Laravel hoặc framework PHP khác trong \code{composer.json} được đối chiếu.
+
+Mô hình Modular Monolith giữ các module nghiệp vụ trong cùng ứng dụng và một database. Lợi ích đối với đề tài là có thể thực hiện checkout trong một transaction mà vẫn phân biệt Catalog sở hữu tồn kho, Sales điều phối đơn hàng và Identity xác định người dùng. Dự án không cần triển khai microservices hay cơ chế đồng bộ phân tán để đáp ứng phạm vi này.
+
+\subsection{PDO và prepared statements}
+PDO được dùng để truyền tham số tách khỏi câu SQL thay vì nối trực tiếp dữ liệu nhập vào chuỗi truy vấn. Prepared statements giúp kiểm soát truy vấn có tham số; các thành phần không bind được như tên cột sắp xếp vẫn cần allowlist.\cite{php-pdo} Tại repository của dự án, tìm kiếm và phân trang được xử lý tại SQL, không tải toàn bộ bảng về trình duyệt rồi lọc.
+
+\subsection{MySQL, transaction và khóa hàng}
+Schema sử dụng InnoDB, Unicode \code{utf8mb4}, khóa ngoại và các ràng buộc duy nhất. Giá lưu bằng \code{DECIMAL(15,2)}; lớp Money chuyển đổi qua đơn vị nguyên để tính toán, tránh dùng số thực nhị phân cho nghiệp vụ tiền.
+
+Locking read như \code{SELECT ... FOR UPDATE} cho phép giao dịch đọc dữ liệu cần cập nhật và khóa các bản ghi liên quan đến khi kết thúc transaction.\cite{mysql-locking} Trong TechZone, Sales mở transaction, Catalog khóa sản phẩm theo thứ tự ID, kiểm tra lại tồn kho và trừ kho. Tạo đơn, lưu chi tiết và xóa giỏ chỉ được xác nhận khi commit; lỗi phải rollback.
+
+\subsection{Session, mật khẩu và CSRF}
+Mã nguồn sử dụng \code{password_hash} và \code{password_verify}, không lưu mật khẩu gốc trong DTO công khai. Hàm hash của PHP tạo chuỗi có thông tin cần thiết để kiểm tra mật khẩu về sau.\cite{php-password} Session ID được thay sau thay đổi xác thực; cookie được cấu hình HttpOnly và SameSite, còn môi trường HTTPS cần Secure.
+
+Với request thay đổi dữ liệu dùng cookie session, CSRF token giúp server kiểm tra request được tạo trong ngữ cảnh hợp lệ. SameSite là biện pháp hỗ trợ, không thay hoàn toàn token và kiểm tra quyền.\cite{owasp-csrf} Fetch adapter của dự án gửi \code{X-CSRF-Token}; Controller xử lý quyền tiếp ở PHP.
+
+\subsection{Giao diện hiện tại và mục tiêu nghiệm thu}
+\begin{table}[H]\centering
+\caption{Stack theo mã nguồn và mục tiêu trong SRS}\label{tab:stack}
+\begin{tabularx}{\linewidth}{@{}P{2.5cm}YY@{}}\toprule
+Thành phần & Bản làm việc đã đối chiếu & Mục tiêu / ghi chú\\ \midrule
+Backend & PHP 8.3, PDO, Composer PSR-4. & PHP là ngôn ngữ xử lý server; không PHP framework.\\
+Frontend & React 19, TypeScript 5.7, Vite 8, Tailwind CSS 4, Astra UI. & Giai đoạn DB-03; không tự coi React/Astra là TailAdmin.\\
+PHP Views & Catalog tại \code{/products} và trang chi tiết. & Cần hoàn thiện các trang PHP Views theo baseline dự án.\\
+Admin UI & Giao diện quản trị React hiện hữu. & TailAdmin Free còn là khoảng trống cần nghiệm thu.\\
+Database & MySQL theo cấu hình dự án; SQL migration InnoDB. & README ghi NAS 26.7.0; chưa xác minh lại instance trong lần viết này.\\
+Tooling & Node 22.12+, pnpm, npm scripts. & Node dùng build/dev tools, không thay PHP backend.\\
+\bottomrule\end{tabularx}
+\end{table}
+
+TailAdmin là template quản trị có bộ nguồn miễn phí do nhà phát hành cung cấp.\cite{tailadmin} Việc chọn phiên bản asset tương thích, tích hợp vào PHP Views và kiểm tra điều kiện sử dụng cần hoàn tất trước nghiệm thu. Báo cáo không biến các phiên bản dependency trong manifest thành bằng chứng tất cả môi trường đã cài đúng phiên bản.
+\clearpage

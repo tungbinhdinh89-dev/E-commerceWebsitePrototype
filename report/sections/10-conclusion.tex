@@ -1,0 +1,22 @@
+\section{Đánh giá, hạn chế và hướng phát triển}
+\subsection{Kết quả thể hiện trong thiết kế và mã nguồn}
+Dự án đã hình thành cấu trúc PHP MVC/Modular Monolith và luồng tích hợp dữ liệu cho giao diện store/admin hiện hữu. Các module có trách nhiệm rõ: Catalog sở hữu giá/tồn kho, Sales điều phối checkout/cancel, Identity kiểm người dùng và Editorial quản lý nội dung. Schema có migration, ràng buộc tham chiếu và snapshot đơn; frontend dùng Fetch và không fallback dữ liệu giả khi backend lỗi.
+
+Các đặc điểm trên được ghi nhận từ mã nguồn và tài liệu. Chúng thể hiện hướng hiện thực phù hợp bài toán, nhưng chưa đủ để xác nhận tất cả chức năng vận hành đúng trên phiên bản chốt. Nghiệm thu cần thực thi theo các ca trong Phần~\ref{sec:testing} và bổ sung kết quả thực tế.
+
+\subsection{Hạn chế cần xử lý trước khi nộp}
+\begin{enumerate}
+\item Giao diện chuyển tiếp React/Astra chưa đồng nghĩa hoàn thành PHP Views/TailAdmin trong SRS. Cần thống nhất bản nộp và hoàn thiện yêu cầu còn thiếu, không âm thầm hạ tiêu chí.
+\item Đổi/reset mật khẩu, avatar, quản trị danh mục và trạng thái xử lý giỏ cần hoàn thiện và nghiệm thu theo từng FR.
+\item Chưa có kết quả mới về responsive, ba trình duyệt, W3C, SEO và mục tiêu phản hồi; không công bố số liệu chưa đo.
+\item COD là phương thức duy nhất; chưa tích hợp thanh toán online, gửi email tự động hoặc giao vận bên thứ ba.
+\item Môi trường MySQL khác bản NAS hiện có chưa được kiểm lại; khả năng cài sạch phải được chứng minh qua thử nghiệm riêng.
+\item Checkout có transaction và khóa tồn kho nhưng chưa có contract idempotency key cho mọi trường hợp retry sau mất response.
+\end{enumerate}
+
+\subsection{Hướng phát triển sau P0}
+Sau khi hoàn tất nghiệm thu, có thể cải thiện khả năng truy cập, SEO toàn site, điều hướng và trải nghiệm mobile. Các tính năng như so sánh sản phẩm, kiểm tương thích PC hoặc tích hợp thanh toán cần được lập yêu cầu, phân tích rủi ro và kiểm thử riêng. Trước khi dùng thương mại phải xem xét giấy phép hình ảnh, quyền riêng tư, vận hành và sao lưu; phạm vi báo cáo hiện là bài tập học phần.
+
+\subsection{Kết luận}
+TechZone là bài toán thực hành kết nối phân tích yêu cầu, thiết kế database, giao diện và xử lý PHP. Phần trọng tâm là bảo đảm dữ liệu và quyền được kiểm tại server, cùng các giao dịch mua hàng có trạng thái nhất quán. Báo cáo cung cấp cấu trúc tài liệu, sơ đồ và quy trình kiểm chứng để tiếp tục hoàn thiện dự án; trạng thái đạt cuối cùng phụ thuộc kết quả chạy, sửa các khoảng trống P0 và review của người phụ trách.
+\clearpage

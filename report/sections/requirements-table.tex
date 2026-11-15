@@ -1,0 +1,46 @@
+{\small
+\begin{longtable}{@{}P{1.8cm}P{9.6cm}P{1.3cm}P{1.8cm}@{}}
+\caption{Yêu cầu chức năng P0 và liên kết kiểm thử}\label{tab:fr}\\
+\toprule FR & Nội dung & Nguồn & TC\\\midrule\endfirsthead
+\toprule FR & Nội dung & Nguồn & TC\\\midrule\endhead
+FR-A01 & Đăng ký bằng họ tên, email, mật khẩu; không trùng email. & BT/TK & TC-01–02\\
+FR-A02 & Đăng nhập email/mật khẩu, đăng xuất và kết thúc session. & BT/TK & TC-03\\
+FR-A03 & Guest/Member/Admin; chặn sai quyền và tài khoản khóa. & BT/TK & TC-04–05\\
+FR-A04 & Cập nhật họ tên, điện thoại, địa chỉ; đổi mật khẩu. & BT & TC-06\\
+FR-A05 & Upload/thay avatar; file lưu trên server. & BT & TC-06\\
+FR-A06 & Admin tìm kiếm/phân trang user; sửa, khóa/mở hoặc vô hiệu hóa. & BT & TC-07\\
+FR-A07 & Admin reset mật khẩu an toàn, không xem mật khẩu gốc. & BT/TK & TC-07\\
+FR-H01 & Trang chủ có nhận diện, menu, banner, danh mục, sản phẩm và tin mới. & BT/TK & TC-08\\
+FR-H02 & Hiển thị và quản trị hotline, email, địa chỉ, logo, thông tin công ty. & BT & TC-08\\
+FR-H03 & Guest/Member gửi liên hệ: họ tên, email, chủ đề, nội dung. & BT/TK & TC-09–10\\
+FR-H04 & Admin tìm/phân trang liên hệ; đánh dấu unread/read/replied. & BT & TC-11\\
+FR-H05 & Admin xóa liên hệ; sửa nội dung/banner trang chủ. & BT & TC-08,11\\
+FR-F01 & Trang giới thiệu có nội dung, hình ảnh và thông tin hỗ trợ. & BT & TC-12\\
+FR-F02 & Danh sách FAQ có thao tác mở/đóng trả lời. & BT/TK & TC-12\\
+FR-F03 & Admin sửa nội dung và ảnh giới thiệu. & BT & TC-12\\
+FR-F04 & Admin thêm/sửa/xóa/ẩn FAQ, sắp xếp hiển thị. & BT/TK & TC-12\\
+FR-F05 & Hiển thị dịch vụ và bảng giá lắp ráp/vệ sinh/nâng cấp. & BT/TK & TC-12\\
+FR-F06 & Admin thêm/sửa/ẩn/xóa dịch vụ và bảng giá. & BT/TK & TC-12\\
+FR-P01 & Danh sách phân trang; chi tiết tên, ảnh, giá, mô tả, thông số. & BT/TK & TC-13\\
+FR-P02 & Tìm sản phẩm theo từ khóa và lọc danh mục. & BT/TK & TC-13\\
+FR-P03 & Admin CRUD/ẩn sản phẩm, sửa giá và tồn kho. & BT & TC-14–15\\
+FR-P04 & Quản lý danh mục và upload ảnh sản phẩm. & BT/TK & TC-16\\
+FR-P05 & Thêm giỏ, đổi số lượng, xóa sản phẩm và xem tổng tiền. & BT/TK & TC-17\\
+FR-P06 & Giỏ Guest theo session, tiếp tục giỏ sau đăng nhập. & TK & TC-17\\
+FR-P07 & Member nhập người nhận, đặt COD; server tính giá/kiểm kho. & TK & TC-18–19\\
+FR-P08 & Lưu order/items MySQL, mã/trạng thái đơn, đơn cá nhân. & TK & TC-18,20\\
+FR-P09 & Admin tìm/phân trang đơn, chuyển trạng thái hợp lệ. & BT & TC-21–22\\
+FR-P10 & Admin tìm giỏ MySQL và đánh dấu trạng thái xử lý. & BT/TK & TC-31\\
+FR-N01 & Danh sách tin có tìm kiếm và phân trang. & BT & TC-23\\
+FR-N02 & Chi tiết tin có nội dung, ảnh và ngày đăng. & BT & TC-23\\
+FR-N03 & Admin CRUD/ẩn tin; quản lý SEO title/description/keywords. & BT & TC-23\\
+FR-N04 & Member bình luận; Guest phải đăng nhập. & BT/TK & TC-24\\
+FR-N05 & Admin tìm/phân trang, duyệt/ẩn/xóa bình luận. & BT/TK & TC-24\\
+FR-X01 & Dashboard quản trị sử dụng TailAdmin Free. & BT & Rà UI\\
+FR-X02 & Mọi form validate bằng JavaScript và PHP. & BT & TC-10,15,26\\
+FR-X03 & Danh sách quản trị có phân trang và phản hồi thao tác. & BT/TK & TC-30\\
+FR-X04 & Ảnh logo/avatar/sản phẩm/bài viết/giới thiệu upload thật. & BT & TC-06,16\\
+FR-X05 & Responsive điện thoại, tablet, desktop. & BT & TC-28\\
+FR-X06 & Title/description, URL rõ nghĩa, alt và semantic HTML. & BT/TK & Rà SEO\\
+\bottomrule\end{longtable}
+}

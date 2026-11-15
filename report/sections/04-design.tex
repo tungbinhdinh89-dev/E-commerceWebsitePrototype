@@ -1,0 +1,148 @@
+\section{Thiết kế hệ thống và luồng nghiệp vụ}
+\label{sec:design}
+\subsection{Kiến trúc tổng thể}
+\begin{figure}[H]\centering
+\begin{tikzpicture}[node distance=1.2cm]
+\node[flow,text width=12cm] (browser) {Trình duyệt: Public / Member / Admin\\React hiện tại hoặc HTML từ PHP Views};
+\node[flow,below=of browser,text width=12cm] (http) {PHP Router → StoreController / ProductController\\Session, validation, quyền, CSRF, HTTP response};
+\node[flow,below=of http,text width=12cm] (service) {Service Layer\\Identity · Catalog · Sales · Editorial · Company · Communication};
+\node[flow,below=of service,text width=12cm] (repo) {Repository / PDO\\Prepared statements, transaction dùng chung connection};
+\node[flow,below=of repo,text width=5cm] (db) {MySQL / InnoDB\\Schema, FK, UQ, CHECK};
+\draw[arrow] (browser)--node[right,font=\small]{HTTP / Fetch cùng origin}(http);
+\draw[arrow] (http)--(service);
+\draw[arrow] (service)--(repo);
+\draw[arrow] (repo)--(db);
+\end{tikzpicture}
+\caption{Kiến trúc logic của bản tích hợp PHP/MySQL}\label{fig:architecture}
+\end{figure}
+Các module chạy trong cùng monolith; các mũi tên thể hiện hướng gọi chính. \code{Application.php} wiring thủ công service/repository và dùng một PDO cho transaction liên module. Upload ghi file server, còn metadata được quản lý trong database; filesystem không phải một phần tự động rollback của MySQL nên lỗi upload cần xử lý riêng.
+\sourcepath{backend/app/Application.php}
+
+\subsection{Sơ đồ use case: khách và thành viên}
+\begin{figure}[H]\centering
+\begin{tikzpicture}
+\node[draw,inner sep=5pt,align=center,font=\small] (guest) at (0,4) {\textless\textless actor\textgreater\textgreater\\Guest};
+\node[draw,inner sep=5pt,align=center,font=\small] (member) at (12,0) {\textless\textless actor\textgreater\textgreater\\Member};
+\node[uc] (u1) at (6,6) {UC-01 Đăng ký};
+\node[uc] (u2) at (6,4.6) {UC-02 Đăng nhập / đăng xuất};
+\node[uc] (u3) at (6,3.2) {UC-03 Tìm và xem sản phẩm};
+\node[uc] (u4) at (6,1.8) {UC-04 Quản lý giỏ};
+\node[uc] (u5) at (6,.4) {UC-05 Đặt COD};
+\node[uc] (u6) at (6,-1) {UC-06 Xem đơn cá nhân};
+\node[uc] (u7) at (6,-2.4) {UC-07 Hồ sơ, mật khẩu, avatar};
+\node[uc] (u8) at (6,-3.8) {UC-08 Liên hệ, FAQ, dịch vụ};
+\node[uc] (u9) at (6,-5.2) {UC-09 Bình luận tin};
+\node[draw,fit=(u1)(u9),inner xsep=1cm,inner ysep=.65cm,
+  label={[font=\small]above:Website TechZone}] {};
+\foreach \u in {u1,u2,u3,u4,u8} \draw (guest)--(\u.west);
+\foreach \u in {u2,u3,u4,u5,u6,u7,u8,u9} \draw (member)--(\u.east);
+\end{tikzpicture}
+\caption{Use case Guest/Member theo SRS; sơ đồ phạm vi chức năng}\label{fig:uc-customer}
+\end{figure}
+UC-02 gộp hai thao tác xác thực để giữ mã của SRS: Guest đăng nhập, người dùng có phiên thực hiện đăng xuất. Guest và Member biểu diễn trạng thái sử dụng, không có quan hệ kế thừa giữa hai actor. Sơ đồ mô tả phạm vi yêu cầu; UC-07 còn phần chưa hoàn thiện trong mã nguồn.
+
+\subsection{Sơ đồ use case: quản trị}
+\begin{figure}[H]\centering
+\begin{tikzpicture}
+\node[draw,inner sep=5pt,align=center] (admin) at (0,0) {\textless\textless actor\textgreater\textgreater\\Admin};
+\node[uc,text width=7cm] (a1) at (7,3.2) {UC-10 Quản lý thành viên};
+\node[uc,text width=7cm] (a2) at (7,1.6) {UC-11 Sản phẩm, danh mục, hình ảnh};
+\node[uc,text width=7cm] (a3) at (7,0) {UC-12 Giỏ hàng và đơn hàng};
+\node[uc,text width=7cm] (a4) at (7,-1.6) {UC-13 Bài viết và bình luận};
+\node[uc,text width=7cm] (a5) at (7,-3.2) {UC-14 Nội dung, liên hệ, FAQ, dịch vụ};
+\node[draw,fit=(a1)(a5),inner sep=.6cm,label=above:{Khu vực quản trị}] {};
+\foreach \a in {a1,a2,a3,a4,a5} \draw (admin)--(\a.west);
+\end{tikzpicture}
+\caption{Use case quản trị theo SRS}\label{fig:uc-admin}
+\end{figure}
+Mọi use case quản trị có tiền điều kiện phiên Admin hợp lệ. Việc gộp nhóm quản trị trong sơ đồ không tạo một domain module Admin riêng; các thao tác vẫn gọi service sở hữu dữ liệu. Quản lý trạng thái giỏ trong UC-12 là yêu cầu chưa có đầy đủ schema/flow tương ứng và phải triển khai tiếp.
+
+\clearpage
+\subsection{Đặc tả use case trọng tâm}
+\subsubsection{UC-05 — Đặt hàng COD}
+\begin{longtable}{@{}P{3cm}P{12.1cm}@{}}
+\caption{Kịch bản UC-05}\label{tab:uc-checkout}\\
+\toprule Trường & Nội dung\\\midrule\endfirsthead
+\toprule Trường & Nội dung\\\midrule\endhead
+Actor & Member đã đăng nhập; không dùng user ID do browser tự quyết định.\\
+Tiền điều kiện & Tài khoản active, giỏ có mặt hàng hợp lệ, có CSRF token.\\
+Kích hoạt & Thành viên chọn đặt hàng tại màn hình checkout.\\
+Luồng chính & (1) Nhập người nhận, điện thoại, địa chỉ. (2) Xác nhận COD. (3) PHP validate, khóa giỏ và sản phẩm. (4) Tính lại giá/giảm/phí. (5) Lưu orders/items và trừ kho. (6) Xóa giỏ, commit và trả mã đơn.\\
+Ngoại lệ & Chưa login: yêu cầu đăng nhập. Sai dữ liệu: báo lỗi trường. Hết hàng/giá đổi: thông báo kiểm tra lại. Lỗi database: rollback. Mất response: tra cứu đơn trước khi thử lại, không khẳng định hệ thống đã có idempotency key.\\
+Hậu điều kiện & Đơn pending và snapshot chi tiết tồn tại; giỏ đã xóa; tồn kho đúng. Nếu giao dịch thất bại không có thay đổi một phần.\\
+Liên kết & FR-P05–P08; BR-03–BR-06, BR-09; TC-17–TC-20.\\
+\bottomrule\end{longtable}
+
+\subsubsection{UC-11 — Quản trị sản phẩm}
+Admin mở danh sách có phân trang, tìm sản phẩm và chọn thêm/sửa. Dữ liệu gồm SKU, tên, danh mục, giá, tồn kho, mô tả và ảnh. Server kiểm quyền/CSRF, dữ liệu số, SKU/slug duy nhất và file. Khi lưu thành công, public chỉ hiển thị sản phẩm active. Khi sản phẩm có lịch sử đơn, ưu tiên chuyển hidden/discontinued thay vì xóa. Quản trị danh mục chuyên biệt còn cần hoàn thiện; không coi việc có bảng categories là đủ nghiệm thu FR-P04.
+
+\subsubsection{UC-12 — Xử lý đơn và hủy đơn}
+Admin tìm đơn, xem chi tiết và yêu cầu trạng thái mới. Server khóa order, kiểm tra trạng thái hiện tại và bảng chuyển trạng thái. Nếu hủy từ pending/confirmed, Catalog hoàn tồn kho trong cùng transaction, sau đó ghi cancelled cùng hai timestamp. Request hủy lại phải bị từ chối, không hoàn thêm kho. Member không có quyền sử dụng thao tác hủy Admin.
+
+\subsubsection{UC-09 và UC-13 — Bình luận và kiểm duyệt}
+Member gửi bình luận cho bài viết công khai. Server xác định tác giả từ session, kiểm nội dung rồi lưu pending. Admin duyệt hoặc ẩn; public chỉ đọc approved của bài published. Luồng lỗi gồm Guest gửi trực tiếp request, ID bài không hợp lệ và nội dung rỗng. Nội dung phải được escape khi hiển thị ở cả trang công khai và quản trị.
+
+\subsection{User flow mua hàng}
+\begin{figure}[H]\centering
+\begin{tikzpicture}[node distance=.7cm]
+\node[flow] (start) {Xem / tìm sản phẩm};
+\node[flow,below=of start] (cart) {Chọn sản phẩm, thêm giỏ};
+\node[decision,below=of cart] (auth) {Đã đăng nhập?};
+\node[flow,right=2cm of auth] (login) {Đăng nhập / đăng ký\\Gộp giỏ Guest};
+\node[flow,below=1cm of auth] (form) {Nhập người nhận\\Xác nhận COD};
+\node[decision,below=of form] (valid) {Dữ liệu / giá / kho hợp lệ?};
+\node[flow,right=2cm of valid] (error) {Hiển thị lỗi\\Sửa thông tin / giỏ};
+\node[flow,below=1cm of valid] (save) {Transaction: trừ kho\\Lưu order và snapshot};
+\node[flow,below=of save] (result) {Commit, xóa giỏ\\Hiển thị mã đơn};
+\node[flow,below=of result] (history) {Xem lịch sử đơn};
+\draw[arrow] (start)--(cart);\draw[arrow] (cart)--(auth);
+\draw[arrow] (auth)--node[above,font=\small]{Chưa}(login);
+\draw[arrow] (auth)--node[left,font=\small]{Có}(form);
+\draw[arrow] (login)|-(form);
+\draw[arrow] (form)--(valid);
+\draw[arrow] (valid)--node[above,font=\small]{Không}(error);
+\draw[arrow] (error.east)--++(.4,0)|-(form.east);
+\draw[arrow] (valid)--node[left,font=\small]{Có}(save);
+\draw[arrow] (save)--(result);\draw[arrow] (result)--(history);
+\end{tikzpicture}
+\caption{User flow từ xem sản phẩm đến theo dõi đơn COD}\label{fig:user-flow}
+\end{figure}
+Luồng thể hiện hành vi của người dùng và phản hồi chính. Việc trừ kho/lưu đơn thực tế chỉ tồn tại sau commit; các bước UI không quyết định giao dịch thành công. Khi request lỗi, giao diện phải tải lại trạng thái tin cậy từ server.
+
+\subsection{Flowchart transaction checkout}
+\begin{figure}[H]\centering
+\begin{tikzpicture}[node distance=.6cm]
+\node[flow,text width=7cm] (a) {Xác thực Member và validate input};
+\node[flow,below=of a,text width=7cm] (b) {BEGIN → khóa giỏ Member};
+\node[flow,below=of b,text width=7cm] (c) {Catalog khóa product theo ID\\Đọc giá mới, kiểm/trừ tồn kho};
+\node[flow,below=of c,text width=7cm] (d) {Tính subtotal, coupon, shipping, total\\Đối chiếu expectedTotal nếu có};
+\node[flow,below=of d,text width=7cm] (e) {Tạo order và item snapshots\\Xóa giỏ, cập nhật thông tin người nhận};
+\node[flow,below=of e,text width=7cm] (f) {COMMIT → trả ID đơn};
+\node[flow,right=1.2cm of d,text width=2.7cm] (r) {Ngoại lệ\\ROLLBACK\\Trả lỗi};
+\draw[arrow] (a)--(b);\draw[arrow] (b)--(c);\draw[arrow] (c)--(d);
+\draw[arrow] (d)--(e);\draw[arrow] (e)--(f);
+\draw[arrow,dashed] (b.east)--++(.5,0)-|(r.north);
+\draw[arrow,dashed] (e.east)--++(.5,0)-|(r.south);
+\end{tikzpicture}
+\caption{Flowchart rút từ OrderService::checkout; đường nét đứt là lỗi trong transaction}\label{fig:checkout}
+\end{figure}
+Lớp Money xử lý chuyển đổi tiền; expectedTotal chỉ giúp phát hiện thay đổi báo giá, không thay tổng tính tại server. Mã nguồn chưa có API idempotency key cho checkout; việc chống mua vượt kho và việc chống mọi đơn trùng do retry là hai tiêu chí cần kiểm tra riêng.
+\sourcepath{backend/app/Modules/Order/Services/OrderService.php}
+
+\subsection{Mô hình trạng thái đơn hàng}
+\begin{figure}[H]\centering
+\begin{tikzpicture}[node distance=1cm]
+\node[flow,text width=2cm] (p) {pending};
+\node[flow,right=of p,text width=2cm] (c) {confirmed};
+\node[flow,right=of c,text width=2cm] (s) {shipping};
+\node[flow,right=of s,text width=2cm] (d) {completed};
+\node[flow,below=1.8cm of c,text width=2cm] (x) {cancelled};
+\draw[arrow] (p)--(c);\draw[arrow] (c)--(s);\draw[arrow] (s)--(d);
+\draw[arrow] (p.south)|-(x.west);\draw[arrow] (c)--(x);
+\node[font=\small,below=.5cm of x] {Hủy: hoàn kho một lần trong transaction};
+\end{tikzpicture}
+\caption{State machine khớp OrderStatus trong mã nguồn}\label{fig:order-state}
+\end{figure}
+completed và cancelled không có chuyển tiếp đi ra. shipping không được hủy theo baseline. Giá trị trạng thái lưu trong database là completed; không đổi thành delivered chỉ vì tên hiển thị cũ của prototype.
+\sourcepath{backend/app/Modules/Order/Entities/OrderStatus.php}
+\clearpage
