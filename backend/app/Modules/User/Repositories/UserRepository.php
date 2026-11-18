@@ -32,6 +32,13 @@ final readonly class UserRepository
         return (int) $this->pdo->lastInsertId();
     }
 
+    public function password(int $id, string $previous, string $hash): bool
+    {
+        $statement = $this->pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ? AND password_hash = ? AND status = \'active\'');
+        $statement->execute([$hash, $id, $previous]);
+        return $statement->rowCount() === 1;
+    }
+
     public function profile(int $id, string $name, string $phone, string $address): void
     {
         $this->pdo->prepare('UPDATE users SET full_name = ?, phone = ?, address = ? WHERE id = ?')->execute([$name, $phone, $address, $id]);

@@ -53,6 +53,29 @@ try {
         exit(0);
     }
     $pdo = Database::connect($config);
+    if ($command === 'migration-status') {
+        echo '[CONNECTED] Database: ' . $config['database'] . ' / MySQL ' . $pdo->query('SELECT VERSION()')->fetchColumn() . PHP_EOL;
+        $exists = $pdo->query("SHOW TABLES LIKE 'schema_migrations'")->fetchColumn();
+        $applied = $exists ? $pdo->query('SELECT version, checksum, applied_at FROM schema_migrations ORDER BY version')->fetchAll(PDO::FETCH_UNIQUE | PDO::FETCH_ASSOC) : [];
+        $files = glob(__DIR__ . '/database/migrations/*.sql');
+        sort($files, SORT_STRING);
+        $pending = 0; $invalid = 0; $count = 0;
+        foreach ($files as $file) {
+            $name = basename($file);
+            $row = $applied[$name] ?? null;
+            $checksum = hash('sha256', str_replace(["\r\n", "\r"], "\n", file_get_contents($file)));
+            $status = !$row ? 'PENDING (not applied)' : (hash_equals($row['checksum'], $checksum) ? 'APPLIED' : 'CHANGED');
+            if (!$row) $pending++; elseif ($status === 'CHANGED') $invalid++; else $count++;
+            echo '[' . $status . '] ' . $name . ($row ? ' / ' . $row['applied_at'] : '') . PHP_EOL;
+            unset($applied[$name]);
+        }
+        foreach ($applied as $name => $row) {
+            echo '[MISSING FILE] ' . $name . ' / applied ' . $row['applied_at'] . PHP_EOL;
+            $invalid++;
+        }
+        echo "Applied: $count; Pending: $pending; Integrity errors: $invalid" . PHP_EOL;
+        exit($invalid > 0 ? 1 : 0);
+    }
     if ($command === 'doctor') {
         echo '[OK] PDO connection to MySQL ' . $pdo->query('SELECT VERSION()')->fetchColumn() . PHP_EOL;
         $hasMigrations = $pdo->query("SHOW TABLES LIKE 'schema_migrations'")->fetchColumn();
@@ -86,11 +109,13 @@ try {
         $seed($pdo);
         echo 'Demo catalog seeded; existing products preserved.' . PHP_EOL;
     } else {
-        throw new RuntimeException('Usage: php console.php [init|connection|doctor|migrate|seed|seed-store|create-admin]');
+        throw new RuntimeException('Usage: php console.php [init|connection|doctor|migration-status|migrate|seed|seed-store|create-admin]');
     }
 } catch (Throwable $error) {
     $message = $error instanceof PDOException
-        ? 'Database operation failed. Check .env, MySQL 8 and migration status. MySQL DDL is not automatically rolled back.'
+        ? ($command === 'migration-status'
+            ? '[DISCONNECTED / CHECK FAILED] Cannot read database migration status. Check backend/.env, database existence, network and database permissions.'
+            : 'Database operation failed. Check .env, MySQL 8 and migration status. MySQL DDL is not automatically rolled back.')
         : $error->getMessage();
     fwrite(STDERR, $message . PHP_EOL);
     exit(1);

@@ -114,6 +114,8 @@ final readonly class StoreController
             case 'register':$result=(string)$this->app->users->register($data);break;
             case 'logout':Session::signOut();break;
             case 'profile':$this->app->users->profile($data);break;
+            case 'password-change':$this->app->users->changePassword($data);break;
+            case 'admin-password-reset':$this->app->users->resetPassword($data);break;
             case 'cart-add':$this->app->cart->change($data,true);break;
             case 'cart-quantity':$this->app->cart->change($data);break;
             case 'favorite':

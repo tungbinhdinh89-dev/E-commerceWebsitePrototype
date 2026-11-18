@@ -59,6 +59,14 @@ Actions: login/register/logout/profile, cart-add/cart-quantity/favorite/checkout
 
 Cookie HttpOnly/SameSite Lax, đổi session ID khi login/logout; file session ở `backend/.cache/sessions/` được ignore. Password dùng password_hash/password_verify và allowlist DTO, không xuất hash. Có giới hạn thử đăng nhập theo IP/email. Frontend chỉ cache RAM, lỗi backend không fallback mock.
 
+### TZ-25 / TZ-27 — mật khẩu trên UI React hiện có
+
+- `POST /api/store/password-change`: `currentPassword`, `password`, `passwordConfirmation`; chỉ đổi tài khoản của session, xác minh mật khẩu cũ.
+- `POST /api/store/admin-password-reset`: `id`, `password`, `passwordConfirmation`; chỉ Admin đặt mật khẩu mới cho Member đang active. Admin nhập và xác nhận mật khẩu mới trong quản lý thành viên; không đọc mật khẩu gốc, không gửi email tự động.
+- Cả hai yêu cầu CSRF, mật khẩu mới 8–72 byte; không trả password/hash. Thay đổi dùng điều kiện hash cũ để tránh ghi đè khi có request đồng thời.
+- Session ghi fingerprint của hash tại login; mỗi request kiểm với DB. Đổi/reset mật khẩu vô hiệu hóa các phiên cũ vào request tiếp theo. Tự đổi giữ phiên hiện tại và xoay session ID/CSRF. Phiên có trước bản cập nhật cần đăng nhập lại; không cần migration SQL.
+- FE: Tài khoản → Thông tin cá nhân → Đổi mật khẩu; Admin → Tài khoản → Đặt lại mật khẩu. PHP Views tương ứng chưa nằm trong phạm vi tích hợp React này; ticket chưa được đánh dấu Done/đóng tự động.
+
 ## Ranh giới nghiệp vụ
 
 `Application.php` wiring thủ công một PDO cho các module. `StoreController` parse request, gọi Service, trả Response; SQL trong Repository. Catalog sở hữu giá/tồn kho; Sales gọi CatalogService trong cùng transaction. Identity sở hữu user/session; Editorial lấy tên tác giả qua UserService. Guest cart theo PHP Session, Member cart/yêu thích theo MySQL.
@@ -84,4 +92,4 @@ npm run backend:test-http
 
 Unit tests độc lập DB. Database tests kiểm constraint/seed/snapshot và rollback. HTTP tests dùng PHP cổng tạm và `computer_store_test`, kiểm session/CSRF, quyền, CMS, upload, checkout rollback/ownership và concurrency checkout/cancel. Fixtures có prefix ngẫu nhiên và dọn sau test; runner từ chối DB không có đuôi `_test`. Chưa xác nhận trên instance MySQL 8 riêng; môi trường kiểm thực tế là NAS 26.7.0.
 
-Đã kết nối các luồng đang có trên React với MySQL. Chưa hoàn tất toàn bộ P0: chuyển UI sang PHP Views/TailAdmin, quản trị danh mục chuyên biệt, đổi/reset mật khẩu/avatar, SEO toàn site, W3C và kiểm thử trình duyệt cần triển khai/nghiệm thu tiếp. Chưa tích hợp email, thanh toán online hoặc giao hàng bên thứ ba.
+Đã kết nối các luồng đang có trên React với MySQL, bổ sung đổi/reset mật khẩu. Chưa hoàn tất toàn bộ P0: chuyển UI sang PHP Views/TailAdmin, quản trị danh mục chuyên biệt, avatar, SEO toàn site, W3C và kiểm thử trình duyệt cần triển khai/nghiệm thu tiếp. Chưa tích hợp email, thanh toán online hoặc giao hàng bên thứ ba.

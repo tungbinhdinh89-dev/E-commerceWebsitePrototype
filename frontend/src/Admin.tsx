@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from "react"
 import { useRemoteList } from "./useRemoteData"
 import RemotePager from "./RemotePager"
+import PasswordForm from "./PasswordForm"
 import {
   Button,
   IconButton,
@@ -654,6 +655,7 @@ function Orders() {
   )
 }
 function UsersPage() {
+  const [resetMember, setResetMember] = useState<string | null>(null)
   const { db, act, busy, user } = useShop()
   const [query, setQuery] = useState("")
   const [page, setPage] = useState(1)
@@ -663,6 +665,7 @@ function UsersPage() {
       <Title sub="Theo dõi thành viên và quản lý quyền truy cập.">
         Tài khoản ({remote.pagination.total})
       </Title>
+      {resetMember && <div><p>Thành viên: {remote.items.find((item) => item.id === resetMember)?.email}</p><PasswordForm key={resetMember} memberId={resetMember} /><Button variant="subtle" onClick={() => setResetMember(null)}>Đóng</Button></div>}
       <div className="surface">
         <div className="admin-toolbar">
           <InputField
@@ -727,6 +730,7 @@ function UsersPage() {
                           ? "Khóa tài khoản"
                           : "Mở khóa"}
                     </Button>
+                    {u.role === "MEMBER" && u.active && <Button variant="neutral" size="small" disabled={busy} onClick={() => setResetMember(u.id)}>Đặt lại mật khẩu</Button>}
                   </td>
                 </tr>
               ))}

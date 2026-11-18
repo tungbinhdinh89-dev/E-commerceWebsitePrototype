@@ -19,7 +19,8 @@ final readonly class UserService
     {
         $id = $_SESSION['user_id'] ?? null;
         $row = $id ? $this->users->find((int) $id) : null;
-        if ($row && $row['status'] !== 'active') {
+        if ($id && (!$row || $row['status'] !== 'active'
+            || !hash_equals(hash('sha256', $row['password_hash']), $_SESSION['credential_version'] ?? ''))) {
             Session::signOut();
             return null;
         }
@@ -53,6 +54,7 @@ final readonly class UserService
         }
         $this->users->clearAttempts($scope);
         Session::signIn((int) $row['id']);
+        $_SESSION['credential_version'] = hash('sha256', $row['password_hash']);
         return $this->present($row);
     }
 
@@ -70,6 +72,44 @@ final readonly class UserService
         } catch (PDOException $error) {
             if (($error->errorInfo[1] ?? null) === 1062) throw new ApiException('Email này đã được đăng ký.', 409);
             throw $error;
+        }
+    }
+
+    private function newPassword(array $data): string
+    {
+        $password = $data['password'] ?? null;
+        if (!is_string($password) || strlen($password) < 8 || strlen($password) > 72
+            || ($data['passwordConfirmation'] ?? null) !== $password) {
+            throw new ApiException('Mật khẩu cần 8–72 byte và xác nhận phải trùng khớp.');
+        }
+        return $password;
+    }
+
+    public function changePassword(array $data): void
+    {
+        $user = $this->requireUser();
+        $row = $this->users->find((int) $user['id']);
+        $old = $data['currentPassword'] ?? null;
+        if (!is_string($old) || strlen($old) > 72 || !password_verify($old, $row['password_hash'])) {
+            throw new ApiException('Mật khẩu hiện tại không chính xác.');
+        }
+        $hash = password_hash($this->newPassword($data), PASSWORD_DEFAULT);
+        if (!$this->users->password((int) $user['id'], $row['password_hash'], $hash)) {
+            throw new ApiException('Tài khoản đã thay đổi. Vui lòng đăng nhập lại.', 409);
+        }
+        Session::signIn((int) $user['id']);
+        $_SESSION['credential_version'] = hash('sha256', $hash);
+    }
+
+    public function resetPassword(array $data): void
+    {
+        $this->requireAdmin();
+        $id = Input::id($data['id'] ?? null);
+        $row = $this->users->find($id) ?? throw new ApiException('Không tìm thấy tài khoản.', 404);
+        if ($row['role'] !== 'member') throw new ApiException('Chỉ đặt lại mật khẩu thành viên.', 403);
+        $hash = password_hash($this->newPassword($data), PASSWORD_DEFAULT);
+        if (!$this->users->password($id, $row['password_hash'], $hash)) {
+            throw new ApiException('Tài khoản đã thay đổi. Vui lòng thử lại.', 409);
         }
     }
 

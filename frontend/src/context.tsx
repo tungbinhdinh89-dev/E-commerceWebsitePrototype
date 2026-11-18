@@ -1,4 +1,4 @@
-import { type ReactNode } from "react"
+import { useEffect, type ReactNode } from "react"
 import { Button, Modal, Toast } from "@figma/astraui"
 import { InputField } from "./fields"
 import { Lock, LogIn } from "lucide-react"
@@ -26,6 +26,27 @@ export default function ShopProvider({ children }: { children: ReactNode }) {
     authError,
     setAuthError,
   } = shop
+  useEffect(() => {
+    const openAuthRoute = () => {
+      const path = (window.location.hash.slice(1) || window.location.pathname).split('?')[0].replace(/\/$/, '')
+      if (shop.db.ready && shop.user && ['/login', '/register', '/regiester'].includes(path)) {
+        setAuth(false)
+        setRegister(false)
+        window.history.replaceState(null, '', '/')
+        window.dispatchEvent(new HashChangeEvent('hashchange'))
+        return
+      }
+      if (['/login', '/register', '/regiester'].includes(path)) {
+        if (!shop.db.ready) return
+        setRegister(path !== '/login')
+        setAuthError("")
+        setAuth(true)
+      }
+    }
+    openAuthRoute()
+    window.addEventListener('hashchange', openAuthRoute)
+    return () => window.removeEventListener('hashchange', openAuthRoute)
+  }, [shop.db.ready, shop.user, setAuth, setRegister, setAuthError])
   async function submit() {
     setAuthError("")
     const ok = await act(

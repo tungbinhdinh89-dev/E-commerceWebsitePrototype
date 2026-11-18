@@ -240,6 +240,14 @@ export const api = {
     return mutate("logout")
   },
 
+  changePassword(currentPassword: string, password: string, passwordConfirmation: string) {
+    return mutate("password-change", { currentPassword, password, passwordConfirmation })
+  },
+
+  resetPassword(id: string, password: string, passwordConfirmation: string) {
+    return mutate("admin-password-reset", { id, password, passwordConfirmation })
+  },
+
   profile(values: Pick<User, "name" | "phone" | "address">) {
     return mutate("profile", values)
   },

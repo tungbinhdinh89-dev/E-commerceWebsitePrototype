@@ -4,6 +4,23 @@ Website bán máy tính và linh kiện. React hiện lấy dữ liệu từ bac
 
 ## Chạy dự án
 
+Bộ script trong thư mục scripts/ dùng chung cho Windows PowerShell và macOS/Linux Bash (cần Node.js, dependencies đã cài và PHP 8.3 cho backend):
+
+| Chức năng | PowerShell | macOS/Linux |
+| --- | --- | --- |
+| Chạy cả frontend + backend | `./scripts/run.ps1` | `bash ./scripts/run.sh` |
+| Chỉ frontend | `./scripts/run.ps1 --frontend` | `bash ./scripts/run.sh --frontend` |
+| Chỉ backend | `./scripts/run.ps1 --backend` | `bash ./scripts/run.sh --backend` |
+| Tạo migration SQL | `./scripts/add.ps1 add_user_field` | `bash ./scripts/add.sh add_user_field` |
+| Apply migration pending | `./scripts/update.ps1` | `bash ./scripts/update.sh` |
+| Kiểm kết nối và migration | `./scripts/check.ps1` | `bash ./scripts/check.sh` |
+
+Các script chạy được từ bất kỳ thư mục làm việc nào. `Ctrl+C` dừng các server do lần chạy đó tạo. Frontend dùng lại Vite cùng dự án nếu đã chạy. `PORT` đổi cổng FE; `BACKEND_PORT` đổi cổng PHP và proxy khi chạy qua `run`. `PHP_BINARY` chọn PHP. PowerShell bị chặn execution policy: dùng `powershell -ExecutionPolicy Bypass -File ./scripts/run.ps1` (tương tự cho các file khác).
+
+`add` chỉ tạo file đánh số tiếp theo trong `backend/database/migrations/`, không cần kết nối DB. Điền SQL vào file trước khi chạy `update`. `update` dùng `backend/.env`, chỉ apply migration chưa chạy, không reset DB hoặc seed dữ liệu. Database phải tồn tại (máy mới chạy `npm run backend:init` trước). Không sửa migration đã apply.
+
+`check` chỉ đọc: báo `CONNECTED`, liệt kê `APPLIED` kèm thời điểm, `PENDING (not applied)`, `CHANGED` nếu checksum sai và `MISSING FILE` nếu thiếu file đã apply. Exit code 0 khi kết nối và checksum hợp lệ (có pending vẫn là 0); lỗi kết nối/toolchain/integrity trả 1. Chưa có bảng lịch sử thì tất cả migration là pending.
+
 Từ root, dùng Node.js 22.12+ trong dòng Node 22 và pnpm theo `.mise.toml`:
 
 ```sh

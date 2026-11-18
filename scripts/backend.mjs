@@ -54,7 +54,7 @@ if (localCommands[command]) {
       ? ['-d', 'upload_max_filesize=5M', '-d', 'post_max_size=6M', '-S', `127.0.0.1:${port}`, '-t', join(backend, 'public'), join(backend, 'router.php')]
       : command === 'test' ? [join(backend, 'tests', 'run.php')]
       : command === 'test-db' ? [join(backend, 'tests', 'database.php')]
-      : ['init', 'connection', 'doctor', 'migrate', 'seed', 'seed-store', 'create-admin'].includes(command) ? [join(backend, 'console.php'), command] : null
+      : ['init', 'connection', 'doctor', 'migration-status', 'migrate', 'seed', 'seed-store', 'create-admin'].includes(command) ? [join(backend, 'console.php'), command] : null
     if (!args) throw new Error('Unknown backend command.')
     const child = spawn(php, args, { cwd: backend, stdio: 'inherit' })
     child.on('error', (error) => { console.error(error.message); process.exitCode = 1 })

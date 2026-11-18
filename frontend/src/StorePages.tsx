@@ -1,6 +1,7 @@
 import { useState } from "react"
 import { useRemoteList, useRemoteItem } from "./useRemoteData"
 import RemotePager from "./RemotePager"
+import PasswordForm from "./PasswordForm"
 import {
   Button,
   IconButton,
@@ -1113,6 +1114,7 @@ function Account({ orderId }: { orderId?: string }) {
               </Button>
             </form>
           )}
+          {tab === "profile" && <PasswordForm />}
         </section>
       </div>
     </main>
